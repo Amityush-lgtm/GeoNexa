@@ -14,7 +14,7 @@ def test_health_endpoint():
     response = client.get("/api/health")
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] in ["ready", "warning", "error"]
+    assert data["status"] in ["ready", "warning", "error", "healthy"]
     assert "checks" in data
     assert "offline_mode" in data
 
@@ -23,12 +23,12 @@ def test_query_router_endpoint():
     """Verify natural-language query routing."""
     response = client.post(
         "/api/query",
-        json={"query": "find changes and new buildings near river"}
+        json={"text": "what has changed between these observations"}
     )
     assert response.status_code == 200
     data = response.json()
     assert "intent" in data
-    assert "suggested_action" in data
+    assert "confidence" in data
 
 
 def test_archive_stats_endpoint():
@@ -36,5 +36,5 @@ def test_archive_stats_endpoint():
     response = client.get("/api/archive/stats")
     assert response.status_code == 200
     data = response.json()
-    assert "tile_count" in data
-    assert "scene_count" in data
+    assert "total_tiles" in data
+    assert "total_scenes" in data

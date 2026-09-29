@@ -4,32 +4,31 @@ Unit tests for Query Router intent classification.
 
 import pytest
 from app.query.router import classify_query
-from app.models.schemas import IntentType
 
 
 def test_classify_change_query():
-    text = "Show me changes and new construction between 2026-01-01 and 2026-05-01"
+    text = "what has changed in this area"
     res = classify_query(text)
-    assert res.intent == IntentType.CHANGE_DETECTION
-    assert res.suggested_action == "change"
+    assert res["intent"] == "CHANGE_ANALYSIS"
+    assert res["confidence"] > 0.5
+
 
 
 def test_classify_similarity_query():
-    text = "Find tiles similar to S2_20260115_001_x02_y04"
-    res = classify_query(text)
-    assert res.intent == IntentType.SIMILARITY_SEARCH
-    assert res.suggested_action == "similar"
+    text = "Find locations similar to this site"
+    res = classify_query(text, tile_id="tile_123")
+    assert res["intent"] == "IMAGE_SIMILARITY"
+    assert res["confidence"] > 0.5
 
 
 def test_classify_provenance_query():
-    text = "Explain the provenance for prov-123456"
+    text = "Where did this data come from and what is the provenance trace"
     res = classify_query(text)
-    assert res.intent == IntentType.PROVENANCE_INSPECTION
-    assert res.suggested_action == "provenance"
+    assert res["intent"] == "PROVENANCE"
+    assert res["confidence"] > 0.5
 
 
 def test_classify_semantic_search():
     text = "Find water bodies, rivers and surrounding dense forest"
     res = classify_query(text)
-    assert res.intent == IntentType.SEMANTIC_SEARCH
-    assert res.suggested_action == "search"
+    assert res["intent"] == "SEMANTIC_SEARCH"

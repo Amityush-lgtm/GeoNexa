@@ -3,14 +3,21 @@ Pytest configuration and shared fixtures for Semantic EO Search.
 """
 
 import os
+import sys
 import tempfile
 from pathlib import Path
 import numpy as np
 import pytest
 import pytest_asyncio
 
+# Ensure backend directory is in sys.path
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
+
 # Set test environment
 os.environ["OFFLINE_MODE"] = "true"
+
 
 
 @pytest.fixture

@@ -16,10 +16,10 @@ class Settings(BaseSettings):
     """Application settings — loaded from .env or environment variables."""
 
     # Core paths
-    data_dir: str = Field(default=str(PROJECT_ROOT / "data" / "archive"))
-    model_path: str = Field(default=str(PROJECT_ROOT / "models" / "clip-vit-b-32"))
+    data_dir: str = Field(default=str(PROJECT_ROOT / "data" / "public"))
+    model_path: str = Field(default=str(PROJECT_ROOT / "models" / "remoteclip-vit-b-32"))
     faiss_index_path: str = Field(default=str(PROJECT_ROOT / "indexes" / "main.index"))
-    database_path: str = Field(default=str(PROJECT_ROOT / "data" / "archive" / "metadata.db"))
+    database_path: str = Field(default=str(PROJECT_ROOT / "data" / "public" / "metadata" / "metadata.db"))
 
     # Offline mode
     offline_mode: bool = Field(default=True)
@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     default_top_k: int = Field(default=20)
 
     # Embedding
-    embedding_model: str = Field(default="clip-vit-b-32")
+    embedding_model: str = Field(default="remoteclip-vit-b-32")
     device: str = Field(default="cpu")
 
     # Server
@@ -50,12 +50,24 @@ class Settings(BaseSettings):
     }
 
     @property
-    def scenes_dir(self) -> Path:
-        return Path(self.data_dir) / "scenes"
+    def raw_scenes_dir(self) -> Path:
+        return Path(self.data_dir) / "raw" / "sentinel2"
+
+    @property
+    def processed_scenes_dir(self) -> Path:
+        return Path(self.data_dir) / "processed" / "sentinel2"
 
     @property
     def tiles_dir(self) -> Path:
         return Path(self.data_dir) / "tiles"
+
+    @property
+    def metadata_dir(self) -> Path:
+        return Path(self.data_dir) / "metadata"
+
+    @property
+    def manifests_dir(self) -> Path:
+        return Path(self.data_dir) / "manifests"
 
     @property
     def indexes_dir(self) -> Path:
@@ -65,3 +77,4 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Get application settings (singleton-ish via module-level caching)."""
     return Settings()
+

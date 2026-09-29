@@ -6,8 +6,9 @@ import logging
 from typing import Optional
 
 from app.embeddings.base import EmbeddingModel
-from app.embeddings.clip_model import CLIPEmbeddingModel
+from app.embeddings.clip_model import RemoteCLIPEmbeddingModel, CLIPEmbeddingModel
 from app.config import get_settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +29,8 @@ def get_embedding_model() -> EmbeddingModel:
 
         logger.info(f"Loading embedding model: {settings.embedding_model} on {settings.device}")
 
-        if settings.embedding_model == "clip-vit-b-32":
-            _model_instance = CLIPEmbeddingModel(
+        if settings.embedding_model in ["remoteclip-vit-b-32", "clip-vit-b-32"]:
+            _model_instance = RemoteCLIPEmbeddingModel(
                 model_path=settings.model_path,
                 device=settings.device,
             )
@@ -37,6 +38,7 @@ def get_embedding_model() -> EmbeddingModel:
             raise ValueError(f"Unknown embedding model: {settings.embedding_model}")
 
     return _model_instance
+
 
 
 def reset_model() -> None:

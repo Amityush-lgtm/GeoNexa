@@ -66,11 +66,12 @@ class VectorStore:
 
         vectors = np.ascontiguousarray(vectors, dtype=np.float32)
 
-        # Assign sequential IDs
+        new_vectors_list = []
         assigned_ids = []
-        for tile_id in tile_ids:
+
+        for vec, tile_id in zip(vectors, tile_ids):
             if tile_id in self._tile_to_id:
-                # Already indexed — skip or update
+                # Already indexed — return existing mapping ID without duplicating in FAISS
                 assigned_ids.append(self._tile_to_id[tile_id])
                 continue
 
@@ -78,13 +79,18 @@ class VectorStore:
             self._id_to_tile[fid] = tile_id
             self._tile_to_id[tile_id] = fid
             assigned_ids.append(fid)
+            new_vectors_list.append(vec)
             self._next_id += 1
 
-        # Add to FAISS
-        self.index.add(vectors)
+        if new_vectors_list:
+            new_vectors = np.ascontiguousarray(np.stack(new_vectors_list), dtype=np.float32)
+            self.index.add(new_vectors)
+            logger.info(f"Added {len(new_vectors)} new vectors to index (total: {self.size})")
+        else:
+            logger.info(f"No new vectors to add (all {len(tile_ids)} tiles were already indexed)")
 
-        logger.info(f"Added {len(vectors)} vectors to index (total: {self.size})")
         return assigned_ids
+
 
     def search(self, query_vector: np.ndarray, k: int = 20) -> Tuple[List[str], np.ndarray]:
         """

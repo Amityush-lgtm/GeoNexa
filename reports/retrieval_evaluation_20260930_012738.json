@@ -1,0 +1,105 @@
+{
+  "timestamp": "2026-09-29T19:57:38.145545+00:00",
+  "evaluation_dataset": "data/evaluation/retrieval_relevance.csv",
+  "embedding_model": "remoteclip-vit-b-32",
+  "queries_evaluated": 5,
+  "metrics": {
+    "mean_recall@1": 0.0,
+    "mean_recall@5": 0.1,
+    "mean_recall@10": 0.1,
+    "mean_precision@5": 0.08,
+    "mrr": 0.1284
+  },
+  "latency_metrics_ms": {
+    "mean": 574.7,
+    "p50": 39.73,
+    "p95": 2181.93
+  },
+  "per_query_results": [
+    {
+      "query_id": "q1",
+      "query": "urban buildings near water",
+      "latency_ms": 2715.46,
+      "total_retrieved": 20,
+      "relevant_count": 4,
+      "recall@1": 0.0,
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "precision@5": 0.0,
+      "reciprocal_rank": 0.0833,
+      "top_3_retrieved": [
+        "SENT_20260115_S2A_MSIL2A_20260115_GUWAHATI_T1_x00_y01",
+        "SENT_20260425_S2A_MSIL2A_20260425_GUWAHATI_T3_x00_y01",
+        "SENT_20260306_S2B_MSIL2A_20260306_GUWAHATI_T2_x00_y01"
+      ]
+    },
+    {
+      "query_id": "q2",
+      "query": "river and surrounding vegetation",
+      "latency_ms": 36.25,
+      "total_retrieved": 20,
+      "relevant_count": 4,
+      "recall@1": 0.0,
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "precision@5": 0.0,
+      "reciprocal_rank": 0.0,
+      "top_3_retrieved": [
+        "SENT_20260425_S2A_MSIL2A_20260425_GUWAHATI_T3_x00_y01",
+        "SENT_20260306_S2B_MSIL2A_20260306_GUWAHATI_T2_x00_y01",
+        "SENT_20260115_S2A_MSIL2A_20260115_GUWAHATI_T1_x00_y01"
+      ]
+    },
+    {
+      "query_id": "q3",
+      "query": "agricultural fields",
+      "latency_ms": 39.73,
+      "total_retrieved": 20,
+      "relevant_count": 4,
+      "recall@1": 0.0,
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "precision@5": 0.0,
+      "reciprocal_rank": 0.0588,
+      "top_3_retrieved": [
+        "SENT_20260425_S2A_MSIL2A_20260425_GUWAHATI_T3_x00_y01",
+        "SENT_20260306_S2B_MSIL2A_20260306_GUWAHATI_T2_x00_y01",
+        "SENT_20260425_S2A_MSIL2A_20260425_GUWAHATI_T3_x01_y03"
+      ]
+    },
+    {
+      "query_id": "q4",
+      "query": "roads through urban areas",
+      "latency_ms": 34.23,
+      "total_retrieved": 20,
+      "relevant_count": 4,
+      "recall@1": 0.0,
+      "recall@5": 0.5,
+      "recall@10": 0.5,
+      "precision@5": 0.4,
+      "reciprocal_rank": 0.5,
+      "top_3_retrieved": [
+        "SENT_20260425_S2A_MSIL2A_20260425_GUWAHATI_T3_x00_y01",
+        "SENT_20260306_S2B_MSIL2A_20260306_GUWAHATI_T2_x00_y01",
+        "SENT_20260115_S2A_MSIL2A_20260115_GUWAHATI_T1_x00_y01"
+      ]
+    },
+    {
+      "query_id": "q5",
+      "query": "dense forest canopy on hills",
+      "latency_ms": 47.83,
+      "total_retrieved": 20,
+      "relevant_count": 4,
+      "recall@1": 0.0,
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "precision@5": 0.0,
+      "reciprocal_rank": 0.0,
+      "top_3_retrieved": [
+        "SENT_20260425_S2A_MSIL2A_20260425_GUWAHATI_T3_x00_y03",
+        "SENT_20260306_S2B_MSIL2A_20260306_GUWAHATI_T2_x00_y03",
+        "SENT_20260115_S2A_MSIL2A_20260115_GUWAHATI_T1_x00_y03"
+      ]
+    }
+  ]
+}

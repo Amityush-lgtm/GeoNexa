@@ -1,12 +1,14 @@
 """
-CLIP ViT-B/32 embedding model implementation.
+RemoteCLIP ViT-B-32 embedding model implementation for Earth Observation.
 
-Uses OpenAI's CLIP or open-clip-torch for local image-text embeddings.
-All inference is local — no external API calls.
+Loads RemoteCLIP (ViT-B-32) from a local checkpoint with zero runtime internet access.
+Inference is 100% on-premises / offline.
 """
 
 import logging
-from typing import List
+import os
+from pathlib import Path
+from typing import List, Optional
 
 import numpy as np
 import torch
@@ -17,57 +19,106 @@ from app.embeddings.base import EmbeddingModel
 logger = logging.getLogger(__name__)
 
 
-class CLIPEmbeddingModel(EmbeddingModel):
+class RemoteCLIPEmbeddingModel(EmbeddingModel):
     """
-    CLIP ViT-B/32 embedding model.
+    RemoteCLIP ViT-B-32 foundation model for remote sensing cross-modal retrieval.
 
-    Encodes images and text into a shared 512-dimensional embedding space.
-    Uses open_clip for model loading and inference.
+    Encodes satellite imagery and natural language text into a shared 512-dimensional
+    L2-normalized vector space.
     """
 
-    def __init__(self, model_path: str | None = None, device: str = "cpu"):
+    def __init__(self, model_path: str | Path | None = None, device: str = "cpu"):
         """
-        Initialize the CLIP model.
+        Initialize the RemoteCLIP model.
 
         Args:
-            model_path: Path to local model weights. If None, uses default open_clip model.
+            model_path: Path to local model checkpoint (.pt) or weights directory.
             device: 'cpu' or 'cuda'.
         """
         self._device = device
-        self._model_path = model_path
+        self._model_path = Path(model_path) if model_path else None
         self._model = None
         self._preprocess = None
         self._tokenizer = None
         self._load_model()
 
+    def _find_checkpoint_file(self) -> Optional[Path]:
+        """Locate checkpoint file inside model_path."""
+        if not self._model_path:
+            return None
+
+        if self._model_path.is_file():
+            return self._model_path
+
+        if self._model_path.is_dir():
+            candidates = [
+                self._model_path / "RemoteCLIP-ViT-B-32.pt",
+                self._model_path / "remoteclip_vit_b32.pt",
+                self._model_path / "model.pt",
+                self._model_path / "pytorch_model.bin",
+            ]
+            for c in candidates:
+                if c.is_file():
+                    return c
+            # Find any .pt file in the directory
+            pt_files = list(self._model_path.glob("*.pt"))
+            if pt_files:
+                return pt_files[0]
+
+        return None
+
     def _load_model(self):
-        """Load the CLIP model and preprocessing transforms."""
+        """Load the RemoteCLIP model weights and transforms locally."""
         try:
             import open_clip
 
-            # Try loading from local path first, fall back to pretrained
             model_name = "ViT-B-32"
-            pretrained = "openai"
+            checkpoint_file = self._find_checkpoint_file()
 
-            self._model, _, self._preprocess = open_clip.create_model_and_transforms(
-                model_name,
-                pretrained=pretrained,
-                device=self._device,
-            )
+            if checkpoint_file and checkpoint_file.exists():
+                logger.info(f"Loading local RemoteCLIP weights from: {checkpoint_file}")
+                # Create architecture without downloading pretrained weights
+                self._model, _, self._preprocess = open_clip.create_model_and_transforms(
+                    model_name,
+                    pretrained=None,
+                    device=self._device,
+                )
+                ckpt = torch.load(str(checkpoint_file), map_location=self._device)
+                state_dict = ckpt.get("state_dict", ckpt)
+                # Clean prefix if needed
+                clean_state_dict = {}
+                for k, v in state_dict.items():
+                    k_clean = k.replace("module.", "") if k.startswith("module.") else k
+                    clean_state_dict[k_clean] = v
+                self._model.load_state_dict(clean_state_dict, strict=False)
+            else:
+                # If checkpoint file is missing, enforce strict offline failure unless test mode
+                error_msg = (
+                    f"RemoteCLIP checkpoint not found at: {self._model_path}\n"
+                    f"Please place 'RemoteCLIP-ViT-B-32.pt' in {self._model_path or 'models/remoteclip-vit-b-32/'}.\n"
+                    f"GeoNexa operates in 100% offline mode and strictly refuses to download weights at runtime."
+                )
+                logger.error(error_msg)
+                raise FileNotFoundError(error_msg)
+
             self._tokenizer = open_clip.get_tokenizer(model_name)
             self._model.eval()
-
-            logger.info(f"Loaded CLIP {model_name} ({pretrained}) on {self._device}")
+            logger.info(f"Successfully loaded RemoteCLIP {model_name} on {self._device} (Offline Mode)")
 
         except ImportError:
             logger.error("open_clip not installed. Install with: pip install open-clip-torch")
             raise
-        except Exception as e:
-            logger.error(f"Failed to load CLIP model: {e}")
-            raise
 
     def encode_image(self, image: np.ndarray) -> np.ndarray:
-        """Encode a single image into a normalized embedding vector."""
+        """
+        Encode a single RGB image into an L2-normalized embedding vector.
+
+        Args:
+            image: RGB image as numpy array (H, W, 3) with values in [0, 255].
+
+        Returns:
+            L2-normalized embedding vector of shape (512,).
+        """
         pil_image = Image.fromarray(image.astype(np.uint8))
         image_tensor = self._preprocess(pil_image).unsqueeze(0).to(self._device)
 
@@ -75,20 +126,36 @@ class CLIPEmbeddingModel(EmbeddingModel):
             features = self._model.encode_image(image_tensor)
             features = features / features.norm(dim=-1, keepdim=True)
 
-        return features.cpu().numpy().flatten()
+        return features.cpu().numpy().flatten().astype(np.float32)
 
     def encode_text(self, text: str) -> np.ndarray:
-        """Encode a text string into a normalized embedding vector."""
+        """
+        Encode a text query into an L2-normalized embedding vector.
+
+        Args:
+            text: Natural language search string.
+
+        Returns:
+            L2-normalized embedding vector of shape (512,).
+        """
         tokens = self._tokenizer([text]).to(self._device)
 
         with torch.no_grad():
             features = self._model.encode_text(tokens)
             features = features / features.norm(dim=-1, keepdim=True)
 
-        return features.cpu().numpy().flatten()
+        return features.cpu().numpy().flatten().astype(np.float32)
 
     def encode_images_batch(self, images: List[np.ndarray]) -> np.ndarray:
-        """Encode a batch of images into normalized embedding vectors."""
+        """
+        Encode a batch of RGB images into an L2-normalized embedding matrix.
+
+        Args:
+            images: List of RGB images as numpy arrays (H, W, 3).
+
+        Returns:
+            L2-normalized embedding matrix of shape (N, 512).
+        """
         if not images:
             return np.empty((0, self.vector_dim), dtype=np.float32)
 
@@ -103,15 +170,15 @@ class CLIPEmbeddingModel(EmbeddingModel):
             features = self._model.encode_image(batch)
             features = features / features.norm(dim=-1, keepdim=True)
 
-        return features.cpu().numpy()
+        return features.cpu().numpy().astype(np.float32)
 
     @property
     def model_name(self) -> str:
-        return "clip-vit-b-32"
+        return "remoteclip-vit-b-32"
 
     @property
     def model_version(self) -> str:
-        return "openai-clip-vit-b-32-v1"
+        return "remoteclip-vit-b-32-v1"
 
     @property
     def vector_dim(self) -> int:
@@ -120,3 +187,7 @@ class CLIPEmbeddingModel(EmbeddingModel):
     @property
     def device(self) -> str:
         return self._device
+
+
+# Alias for backwards compatibility
+CLIPEmbeddingModel = RemoteCLIPEmbeddingModel

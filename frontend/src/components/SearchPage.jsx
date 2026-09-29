@@ -3,7 +3,7 @@ import { Search, Sparkles, Filter, Calendar, Satellite, Sliders, ExternalLink, A
 import { searchArchive, routeQuery, getTileImageUrl } from '../api/client';
 
 export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectProvenance, setActiveTab }) {
-  const [query, setQuery] = useState('newly built structures near a river');
+  const [query, setQuery] = useState('urban buildings near water');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
@@ -19,11 +19,11 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
   const [intentSuggestion, setIntentSuggestion] = useState(null);
 
   const sampleQueries = [
-    'newly built structures near a river',
-    'dense forest canopy and dark green vegetation',
-    'agricultural crop fields and farmland',
-    'coastal port docks and cargo containers',
-    'asphalt road and transportation corridor',
+    'urban buildings near water',
+    'river and surrounding vegetation',
+    'agricultural fields',
+    'roads through urban areas',
+    'dense forest canopy on hills',
   ];
 
   const handleQueryChange = async (e) => {
@@ -86,11 +86,12 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
         }} />
 
         <h1 style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '0.75rem', background: 'linear-gradient(135deg, #ffffff 40%, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Semantic Earth Observation Search
+          GeoNexa — Semantic EO Search
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '1rem', maxWidth: '680px', margin: '0 auto 1.75rem' }}>
-          Natural-language indexing and similarity retrieval across multi-sensor satellite imagery archives without internet dependency.
+          Natural-language indexing and RemoteCLIP similarity retrieval across Sentinel-2 satellite archives without internet dependency.
         </p>
+
 
         {/* Query Input Box */}
         <div style={{ maxWidth: '850px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

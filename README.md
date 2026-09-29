@@ -1,86 +1,79 @@
-# Semantic EO Search
+# GeoNexa — Semantic Earth Observation Search & Intelligence Platform
 
-**Semantic Retrieval and Multi-Temporal Change Analysis of Satellite Imagery**
-
-> SIH26227 — Smart India Hackathon 2026
-
----
-
-## Overview
-
-Semantic EO Search is an offline, on-premises Earth Observation search and analysis platform. It enables analysts to search a local satellite-imagery archive using natural language and image similarity, investigate locations, analyze changes over time, and trace evidence provenance.
-
-### Core Workflow
-
-```
-SEARCH → DISCOVER → INVESTIGATE → CHANGE → SIMILARITY → EVIDENCE
-```
-
-### Key Capabilities
-
-- **Semantic Search** — Find satellite tiles using natural language ("newly built structures near a river")
-- **Image Similarity** — Discover locations that look similar to a selected tile
-- **Change Analysis** — Detect and analyze changes between temporal observations
-- **False-Alarm Suppression** — Confidence-aware change detection that accounts for seasonal, atmospheric, and sensor confounders
-- **Provenance** — Full traceability of every result back to source data, models, and parameters
-- **Offline Operation** — Runs entirely on-premises with no external API dependencies
+> **Target Problem Statement:** SIH26227 — Semantic Retrieval and Multi-Temporal Change Analysis of Satellite Imagery  
+> **Tagline:** Offline, on-premises cross-modal Earth Observation intelligence engine for natural-language satellite search, site similarity, and multi-temporal change detection.
 
 ---
 
-## Architecture
+## 1. Executive Summary
+
+**GeoNexa** is an air-gapped, on-premises Earth Observation search and intelligence platform designed for remote sensing analysts. It enables cross-modal discovery across large satellite-imagery archives using natural language queries (e.g. *"urban buildings near water"*, *"river and surrounding vegetation"*), automatic visual site similarity matching, and confident multi-temporal change detection with false-alarm suppression.
+
+### Core Analyst Workflow
 
 ```
-React Frontend  ──▶  FastAPI Backend  ──▶  SQLite + FAISS
-                                           │
-                          ┌────────────────┼────────────────┐
-                          ▼                ▼                ▼
-                     Archive           Retrieval         Change
-                     Service           Service          Service
-                          │                │                │
-                          ▼                ▼                ▼
-                      rasterio          CLIP ViT        Temporal
-                      Tiler             FAISS           Detector
+SEARCH  ──▶  DISCOVER  ──▶  INVESTIGATE  ──▶  COMPARE  ──▶  SIMILAR SITES  ──▶  PROVENANCE TRACE
 ```
-
-See [docs/architecture.md](docs/architecture.md) for the full architecture diagram.
 
 ---
 
-## Prerequisites
+## 2. Key Capabilities & Technical Highlights
 
+- **RemoteCLIP Semantic Search:** Uses RemoteCLIP (ViT-B-32) foundation model pre-trained on Earth Observation imagery to encode both 4-band satellite chips and natural-language text into a shared 512-dimensional vector space.
+- **FAISS Vector Search:** Sub-millisecond exact cosine similarity retrieval (`IndexFlatIP`) paired with relational SQLite spatial & temporal metadata filtering.
+- **Geospatial Chip Tiling:** Preserves CRS (EPSG:4326), spatial bounding boxes, centroids, and multi-band radiometric resolution.
+- **1:1 Stable Vector Mapping:** Strictly enforces 1 Tile ↔ 1 Vector ↔ 1 Stable Vector ID invariant with deduplication.
+- **Incremental Ingestion:** SHA-256 content hashing skips unchanged tiles, indexing only newly ingested scenes.
+- **100% Air-Gap Offline Compliance:** Zero runtime internet dependencies, zero cloud API calls, local model weights, local FAISS index, local SQLite database.
+- **Auditable Provenance:** Every query, similarity search, and change detection produces an immutable execution trace.
+
+---
+
+## 3. System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                 GeoNexa React 18 + Vite UI                  │
+│       Search | Tile Inspector | Change Engine | Provenance  │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ REST / JSON
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    FastAPI Backend Router                   │
+│         /api/search  |  /api/archive  |  /api/change        │
+└──────────────┬──────────────────────────────┬───────────────┘
+               │                              │
+               ▼                              ▼
+┌─────────────────────────────┐┌──────────────────────────────┐
+│     RemoteCLIP Encoder      ││      FAISS + SQLite DB       │
+│  ViT-B-32 (Local Weights)   ││ Vectors (512-d) + Metadata   │
+└─────────────────────────────┘└──────────────────────────────┘
+```
+
+---
+
+## 4. Setup & Execution Guide
+
+### 4.1 Prerequisites
 - Python 3.10+
 - Node.js 18+ and npm
-- GDAL (system library — required by rasterio)
-- ~2 GB disk space for models
-- ~4 GB RAM minimum (8 GB recommended)
-- GPU optional (CUDA-capable GPU accelerates embeddings)
+- `rasterio`, `torch`, `open-clip-torch`, `faiss-cpu`, `fastapi`
 
----
-
-## Setup
-
-### 1. Clone and create environment
+### 4.2 Environment Installation
 
 ```bash
-git clone <repository-url>
-cd semantic-eo-search
-
-# Create Python virtual environment
+# 1. Create and activate virtual environment
 python -m venv .venv
 
-# Activate (Windows)
+# Windows:
 .venv\Scripts\activate
-
-# Activate (Linux/macOS)
+# Linux / macOS:
 source .venv/bin/activate
 
-# Install backend dependencies
+# 2. Install Python dependencies
 pip install -r requirements.txt
-```
 
-### 2. Frontend setup
-
-```bash
+# 3. Install Frontend dependencies
 cd frontend
 npm install
 cd ..
@@ -88,282 +81,122 @@ cd ..
 
 ---
 
-## Offline Setup
+## 5. Offline Data Staging & Index Pipeline
 
-All models and data must be available locally before disconnecting from the internet.
+Execute the end-to-end pipeline using the provided scripts:
 
-### 3. Download models
-
+### Step 1: Stage Public Sentinel-2 Scenes (Guwahati AOI)
 ```bash
-python scripts/download_models.py
+python scripts/stage_guwahati_sentinel2.py
 ```
+*Outputs calibrated 4-band Sentinel-2 L2A GeoTIFFs to `data/public/raw/sentinel2/`.*
 
-This downloads:
-- CLIP ViT-B/32 weights → `models/clip-vit-b-32/`
+### Step 2: Ingest & Tile Scenes
+```bash
+python scripts/ingest.py --data-dir data/public/raw/sentinel2
+```
+*Validates GeoTIFFs, extracts geospatial metadata, creates 256×256 georeferenced chips in `data/public/tiles/`, registers SQLite records in `metadata.db`, and updates `data/public/manifests/scenes.csv`.*
 
-After download, no internet connection is required.
+### Step 3: Build RemoteCLIP Vector Index
+```bash
+python scripts/build_index.py --force-rebuild
+```
+*Generates 512-dim L2-normalized RemoteCLIP embeddings, populates FAISS `indexes/main.index`, registers SQLite `embeddings`, and writes `index_manifest`.*
 
-### 4. Verify offline readiness
+### Step 4: Test Incremental Ingestion
+```bash
+python scripts/incremental_ingest.py
+```
+*Verifies content hash skipping for unchanged tiles.*
 
+### Step 5: Verify 100% Offline Readiness
 ```bash
 python scripts/check_offline.py
 ```
 
-Expected output:
-```
-OFFLINE READINESS CHECK
-✓ Model weights present
-✓ Embedding model loadable
-✓ Vector index present (or empty — will be created on first ingest)
-✓ SQLite database present (or will be created)
-✓ No external inference endpoint required
-```
-
 ---
 
-## Dataset Setup
+## 6. Running GeoNexa
 
-### 5. Prepare satellite imagery
-
-Place GeoTIFF files in the data directory:
-
-```
-data/
-    archive/
-        scenes/
-            scene_001.tif
-            scene_002.tif
-            ...
-```
-
-**Requirements:**
-- GeoTIFF format (.tif / .tiff)
-- Valid CRS (coordinate reference system)
-- At least 3 bands (RGB) for embedding generation
-- Acquisition date in filename or metadata
-
-### 6. Ingest scenes
-
+### Start Backend API Server
 ```bash
-# Ingest a single scene
-python scripts/ingest.py --scene data/archive/scenes/scene_001.tif
-
-# Ingest all scenes in a directory
-python scripts/ingest.py --directory data/archive/scenes/
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
+*API Swagger Documentation available at: `http://localhost:8000/docs`*
 
-This will:
-1. Validate each scene
-2. Extract metadata
-3. Generate tiles (256×256 with 32px overlap)
-4. Store metadata in SQLite
-
----
-
-## Index Build
-
-### 7. Build the vector index
-
-```bash
-python scripts/build_index.py
-```
-
-This will:
-1. Load the CLIP model
-2. Encode all tiles
-3. Build the FAISS index
-4. Save to `indexes/main.index`
-
----
-
-## Incremental Ingestion
-
-### 8. Add new imagery without rebuilding
-
-```bash
-python scripts/incremental_ingest.py --directory data/archive/scenes/
-```
-
-This will:
-1. Hash each tile's content
-2. Compare against the index manifest
-3. Skip unchanged tiles
-4. Embed and index only new/modified tiles
-5. Update the FAISS index and manifest
-
----
-
-## Running
-
-### Backend
-
-```bash
-cd backend
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-API docs available at: http://localhost:8000/docs
-
-### Frontend
-
+### Start Frontend Development Server
 ```bash
 cd frontend
 npm run dev
 ```
-
-Application available at: http://localhost:5173
-
----
-
-## Configuration
-
-Create a `.env` file in the project root:
-
-```env
-# Core paths
-DATA_DIR=./data/archive
-MODEL_PATH=./models/clip-vit-b-32
-FAISS_INDEX_PATH=./indexes/main.index
-DATABASE_PATH=./data/archive/metadata.db
-
-# Offline mode
-OFFLINE_MODE=true
-
-# Tiling
-TILE_SIZE=256
-TILE_OVERLAP=32
-
-# Search
-DEFAULT_TOP_K=20
-
-# Embedding
-EMBEDDING_MODEL=clip-vit-b-32
-DEVICE=cpu  # or cuda
-
-# Server
-BACKEND_HOST=0.0.0.0
-BACKEND_PORT=8000
-```
+*Open your browser at: `http://localhost:5173`*
 
 ---
 
-## Running Tests
+## 7. Testing & Evaluation
 
+### Run Unit & Integration Tests
 ```bash
-# Run all tests
 pytest backend/tests/ -v
-
-# Run specific test modules
-pytest backend/tests/test_ingestion.py -v
-pytest backend/tests/test_retrieval.py -v
-pytest backend/tests/test_change.py -v
-pytest backend/tests/test_incremental.py -v
 ```
 
----
-
-## Running Evaluation
-
-### Retrieval evaluation
-
+### Run Retrieval Relevance Benchmark
 ```bash
-python scripts/evaluate_retrieval.py --output reports/retrieval_evaluation.json
+python scripts/evaluate_retrieval.py
 ```
+*Evaluates against `data/evaluation/retrieval_relevance.csv` and outputs Recall@K, Precision@K, MRR, and latency metrics to `reports/`.*
 
-### Change detection evaluation
-
+### Run System Benchmark
 ```bash
-python scripts/evaluate_change.py --output reports/change_evaluation.json
+python scripts/benchmark_system.py
 ```
-
-### System metrics
-
-```bash
-python scripts/evaluate_system.py --output reports/system_metrics.json
-```
-
-Reports are saved as JSON in the `reports/` directory.
+*Measures hardware, storage, index size, and P50/P95 query latencies.*
 
 ---
 
-## API Endpoints
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/archive/ingest` | Ingest a single scene |
-| `POST` | `/api/archive/ingest/batch` | Ingest multiple scenes |
-| `GET` | `/api/archive/stats` | Archive statistics |
-| `GET` | `/api/archive/tiles/{tile_id}` | Get tile metadata |
-| `GET` | `/api/archive/tiles/{tile_id}/image` | Get tile image |
-| `POST` | `/api/search` | Semantic text search |
-| `POST` | `/api/search/similar` | Image-to-image similarity |
-| `POST` | `/api/change/analyze` | Run change analysis |
-| `GET` | `/api/change/{analysis_id}` | Get analysis result |
-| `GET` | `/api/change/temporal/{tile_id}` | Temporal observations |
-| `POST` | `/api/query` | Route a natural-language query |
-| `GET` | `/api/provenance/{id}` | Get provenance record |
-| `GET` | `/api/health` | Health + offline readiness |
-
----
-
-## Demo Cases
-
-1. **Semantic Search** — "newly built structures near a river" → ranked tiles
-2. **Similar Sites** — Select tile → find similar locations
-3. **Change Analysis** — Select tile → before/after/change map
-4. **Question Answering** — "What changed here?" → evidence-grounded answer
-5. **False Alarm** — Seasonal variation → system reduces confidence
-6. **Incremental Ingestion** — Add 20 tiles → only new tiles processed
-
----
-
-## Project Structure
+## 8. Repository Structure
 
 ```
 semantic-eo-search/
 ├── backend/
 │   ├── app/
-│   │   ├── api/              — FastAPI route handlers
-│   │   ├── archive/          — Ingestion, tiling, metadata
-│   │   ├── embeddings/       — Embedding model interface + CLIP
-│   │   ├── retrieval/        — FAISS, search, similarity, filters
-│   │   ├── change/           — Temporal, detection, confidence
-│   │   ├── provenance/       — Provenance tracking
-│   │   ├── query/            — Query routing
-│   │   ├── models/           — Pydantic schemas
-│   │   ├── services/         — Service orchestration
-│   │   ├── db.py             — Database connection
-│   │   └── main.py           — FastAPI application
-│   └── tests/                — Test suite
-├── frontend/
-│   ├── src/
-│   │   ├── components/       — React components
-│   │   ├── pages/            — Page components
-│   │   ├── services/         — API client
-│   │   └── ...
-│   └── ...
+│   │   ├── api/             # FastAPI REST endpoints
+│   │   ├── archive/         # Ingestion, georeferenced tiling, metadata extraction
+│   │   ├── change/          # Temporal matching, change detection, confidence scoring
+│   │   ├── embeddings/      # RemoteCLIP model abstraction & local loader
+│   │   ├── models/          # Pydantic schemas
+│   │   ├── provenance/      # Immutable audit trail & trace records
+│   │   ├── query/           # Query classification & router
+│   │   ├── retrieval/       # FAISS vector store & spatiotemporal filters
+│   │   ├── config.py        # Central configuration
+│   │   ├── db.py            # SQLite schema & connection manager
+│   │   └── main.py          # FastAPI application entry point
+│   └── tests/               # Unit & integration test suite
 ├── data/
-│   ├── archive/              — Scene + tile storage
-│   ├── evaluation/           — Evaluation data
-│   └── samples/              — Sample imagery
-├── models/                   — Local model weights
-├── indexes/                  — FAISS index files
-├── scripts/                  — Utility scripts
-├── docs/                     — Documentation
-├── reports/                  — Evaluation reports
+│   ├── public/
+│   │   ├── raw/sentinel2/   # Full multi-spectral source scenes
+│   │   ├── tiles/           # 256x256 georeferenced chips
+│   │   ├── metadata/        # SQLite metadata.db
+│   │   └── manifests/       # scenes.csv & index_manifest
+│   ├── synthetic/tests/     # Strictly separated unit test fixtures
+│   └── evaluation/          # Ground-truth retrieval relevance dataset
+├── docs/
+│   ├── data_acquisition.md  # AOI selection & Sentinel-2 catalog
+│   ├── model_provenance.md  # RemoteCLIP architecture & license
+│   ├── offline_validation.md# Air-gap compliance & verification
+│   └── confidence_model.md  # False-alarm suppression formulation
+├── frontend/                # React 18 + Vite Intelligence Analyst UI
+├── models/
+│   └── remoteclip-vit-b-32/ # Local RemoteCLIP PyTorch checkpoint
+├── reports/                 # Evaluation and benchmark reports
+├── scripts/
+│   ├── stage_guwahati_sentinel2.py # Staging script for Guwahati AOI
+│   ├── ingest.py                   # Ingestion & tiling script
+│   ├── build_index.py              # FAISS vector builder
+│   ├── incremental_ingest.py       # Content hash incremental ingest
+│   ├── check_offline.py            # Offline readiness check
+│   ├── evaluate_retrieval.py       # IR metrics evaluation
+│   └── benchmark_system.py         # Hardware & latency benchmark
 ├── requirements.txt
-├── .env.example
 └── README.md
 ```
-
----
-
-## License
-
-[To be determined]
-
----
-
-## Team
-
-Smart India Hackathon 2026 — SIH26227

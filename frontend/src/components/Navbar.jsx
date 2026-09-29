@@ -29,12 +29,13 @@ export default function Navbar({ activeTab, setActiveTab, offlineStatus }) {
           </div>
           <div>
             <div style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '-0.02em', background: 'linear-gradient(90deg, #f8fafc, #93c5fd)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              GEO-SEMANTIC <span style={{ fontSize: '0.7rem', color: '#06b6d4', padding: '2px 6px', border: '1px solid rgba(6, 182, 212, 0.4)', borderRadius: '4px', verticalAlign: 'middle', WebkitTextFillColor: '#38bdf8' }}>SIH26227</span>
+              GeoNexa <span style={{ fontSize: '0.7rem', color: '#06b6d4', padding: '2px 6px', border: '1px solid rgba(6, 182, 212, 0.4)', borderRadius: '4px', verticalAlign: 'middle', WebkitTextFillColor: '#38bdf8' }}>SIH26227</span>
             </div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-              Offline Earth Observation Intelligence
+              Semantic Earth Observation Search & Intelligence
             </div>
           </div>
+
         </div>
 
         {/* Navigation Tabs */}

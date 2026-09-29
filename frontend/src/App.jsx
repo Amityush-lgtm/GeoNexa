@@ -90,8 +90,9 @@ export default function App() {
       </main>
 
       <footer style={{ borderTop: '1px solid var(--border-subtle)', padding: '1.25rem 2rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-dim)', background: 'rgba(10, 14, 23, 0.9)' }}>
-        Smart India Hackathon 2026 — Problem Statement SIH26227 — Offline Semantic Satellite Retrieval & Multi-Temporal Change Platform
+        GeoNexa — Semantic Earth Observation Search & Intelligence Platform | Smart India Hackathon 2026 (SIH26227)
       </footer>
+
     </div>
   );
 }
