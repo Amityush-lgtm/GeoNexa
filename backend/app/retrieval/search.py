@@ -1,0 +1,285 @@
+"""
+Semantic search pipeline.
+
+Orchestrates: text embedding → FAISS search → metadata join → filtering → ranking.
+"""
+
+import logging
+import time
+import uuid
+from datetime import datetime, timezone
+from typing import Optional, List
+
+import numpy as np
+
+from app.db import get_connection
+from app.embeddings.manager import get_embedding_model
+from app.retrieval.vector_store import get_vector_store
+from app.retrieval.filters import apply_metadata_filters
+
+logger = logging.getLogger(__name__)
+
+
+def semantic_search(
+    query: str,
+    top_k: int = 20,
+    bbox: Optional[List[float]] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    sensor: Optional[str] = None,
+) -> dict:
+    """
+    Perform semantic text-to-image search.
+
+    Pipeline:
+        1. Encode text query with CLIP
+        2. Search FAISS index for nearest neighbors (over-fetch for filtering)
+        3. Join with SQLite metadata
+        4. Apply metadata filters (date, sensor, bbox)
+        5. Trim to top_k
+        6. Return ranked results with provenance
+
+    Args:
+        query: Natural-language search query.
+        top_k: Number of results to return.
+        bbox: Optional [lon_min, lat_min, lon_max, lat_max].
+        date_from: Optional start date YYYY-MM-DD.
+        date_to: Optional end date YYYY-MM-DD.
+        sensor: Optional sensor filter.
+
+    Returns:
+        dict with query_id, results, total, latency_ms
+    """
+    start = time.time()
+    query_id = f"q-{uuid.uuid4().hex[:8]}"
+
+    # 1. Encode text
+    model = get_embedding_model()
+    query_vector = model.encode_text(query)
+
+    # 2. Search FAISS (over-fetch to allow for filtering)
+    store = get_vector_store()
+    fetch_k = top_k * 3 if any([bbox, date_from, date_to, sensor]) else top_k
+    tile_ids, scores = store.search(query_vector, k=fetch_k)
+
+    if not tile_ids:
+        return {
+            "query_id": query_id,
+            "results": [],
+            "total": 0,
+            "latency_ms": (time.time() - start) * 1000,
+        }
+
+    # 3. Join with metadata
+    results = _join_metadata(tile_ids, scores)
+
+    # 4. Apply filters
+    results = apply_metadata_filters(
+        results, bbox=bbox, date_from=date_from, date_to=date_to, sensor=sensor
+    )
+
+    # 5. Trim to top_k
+    results = results[:top_k]
+
+    # 6. Log query
+    latency_ms = (time.time() - start) * 1000
+    _log_query(query_id, "SEMANTIC_SEARCH", query, None, {
+        "bbox": bbox, "date_from": date_from, "date_to": date_to, "sensor": sensor,
+    }, len(results), latency_ms)
+
+    return {
+        "query_id": query_id,
+        "results": results,
+        "total": len(results),
+        "latency_ms": latency_ms,
+    }
+
+
+def similarity_search(
+    tile_id: str,
+    top_k: int = 20,
+    bbox: Optional[List[float]] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    sensor: Optional[str] = None,
+) -> dict:
+    """
+    Perform image-to-image similarity search.
+
+    Uses the embedding of an existing tile to find similar tiles.
+    """
+    start = time.time()
+    query_id = f"q-{uuid.uuid4().hex[:8]}"
+
+    # Get the tile's embedding vector
+    store = get_vector_store()
+    query_vector = store.get_vector(tile_id)
+
+    if query_vector is None:
+        # Tile not in index — try to load and embed the image
+        tile_meta = _get_tile_metadata(tile_id)
+        if tile_meta is None:
+            return {
+                "query_id": query_id,
+                "results": [],
+                "total": 0,
+                "latency_ms": (time.time() - start) * 1000,
+                "error": f"Tile {tile_id} not found",
+            }
+
+        model = get_embedding_model()
+        image = _load_tile_image(tile_meta["file_path"])
+        if image is not None:
+            query_vector = model.encode_image(image)
+        else:
+            return {
+                "query_id": query_id,
+                "results": [],
+                "total": 0,
+                "latency_ms": (time.time() - start) * 1000,
+                "error": f"Could not load image for tile {tile_id}",
+            }
+
+    # Search (fetch extra to exclude self and filter)
+    fetch_k = top_k + 5
+    tile_ids, scores = store.search(query_vector, k=fetch_k)
+
+    # Exclude the query tile itself
+    filtered = [(tid, s) for tid, s in zip(tile_ids, scores) if tid != tile_id]
+    tile_ids = [t[0] for t in filtered]
+    scores = np.array([t[1] for t in filtered])
+
+    # Join metadata and filter
+    results = _join_metadata(tile_ids, scores)
+    results = apply_metadata_filters(
+        results, bbox=bbox, date_from=date_from, date_to=date_to, sensor=sensor
+    )
+    results = results[:top_k]
+
+    latency_ms = (time.time() - start) * 1000
+    _log_query(query_id, "IMAGE_SIMILARITY", None, tile_id, {
+        "bbox": bbox, "date_from": date_from, "date_to": date_to, "sensor": sensor,
+    }, len(results), latency_ms)
+
+    return {
+        "query_id": query_id,
+        "results": results,
+        "total": len(results),
+        "latency_ms": latency_ms,
+    }
+
+
+def _join_metadata(tile_ids: List[str], scores: np.ndarray) -> List[dict]:
+    """Join FAISS results with SQLite tile metadata."""
+    if not tile_ids:
+        return []
+
+    placeholders = ",".join(["?"] * len(tile_ids))
+    with get_connection() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT t.tile_id, t.scene_id, t.file_path, t.center_lat, t.center_lon,
+                   t.bounds_minx, t.bounds_miny, t.bounds_maxx, t.bounds_maxy,
+                   t.band_count,
+                   s.sensor, s.acquisition_date
+            FROM tiles t
+            JOIN scenes s ON t.scene_id = s.scene_id
+            WHERE t.tile_id IN ({placeholders})
+            """,
+            tile_ids,
+        ).fetchall()
+
+    # Build lookup
+    meta_lookup = {row["tile_id"]: dict(row) for row in rows}
+
+    results = []
+    for tid, score in zip(tile_ids, scores):
+        meta = meta_lookup.get(tid)
+        if meta is None:
+            continue
+
+        results.append({
+            "tile_id": tid,
+            "similarity": float(score),
+            "image_url": f"/api/archive/tiles/{tid}/image",
+            "location": {
+                "lat": meta.get("center_lat"),
+                "lon": meta.get("center_lon"),
+            },
+            "bbox": [
+                meta.get("bounds_minx", 0),
+                meta.get("bounds_miny", 0),
+                meta.get("bounds_maxx", 0),
+                meta.get("bounds_maxy", 0),
+            ],
+            "date": meta.get("acquisition_date"),
+            "sensor": meta.get("sensor"),
+            "scene_id": meta.get("scene_id"),
+        })
+
+    return results
+
+
+def _get_tile_metadata(tile_id: str) -> Optional[dict]:
+    """Get tile metadata from SQLite."""
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM tiles WHERE tile_id = ?", (tile_id,)
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def _load_tile_image(file_path: str) -> Optional[np.ndarray]:
+    """Load a tile image as RGB numpy array."""
+    try:
+        import rasterio
+        with rasterio.open(file_path) as ds:
+            bands = min(ds.count, 3)
+            data = ds.read(list(range(1, bands + 1)))
+
+            if bands == 1:
+                # Grayscale → repeat to 3 channels
+                data = np.repeat(data, 3, axis=0)
+            elif bands == 2:
+                # 2 bands → pad with zeros
+                data = np.concatenate([data, np.zeros_like(data[:1])], axis=0)
+
+            # CHW → HWC
+            image = np.transpose(data, (1, 2, 0))
+
+            # Normalize to 0-255
+            if image.dtype != np.uint8:
+                vmin, vmax = np.percentile(image[image > 0], [2, 98]) if image.any() else (0, 1)
+                if vmax > vmin:
+                    image = np.clip((image - vmin) / (vmax - vmin) * 255, 0, 255).astype(np.uint8)
+                else:
+                    image = np.zeros_like(image, dtype=np.uint8)
+
+            return image
+    except Exception as e:
+        logger.error(f"Failed to load tile image {file_path}: {e}")
+        return None
+
+
+def _log_query(
+    query_id: str, query_type: str, query_text: Optional[str],
+    query_tile_id: Optional[str], filters: dict,
+    result_count: int, latency_ms: float,
+) -> None:
+    """Log a query to the audit table."""
+    import json
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO query_log
+                    (query_id, query_type, query_text, query_tile_id, filters, result_count, latency_ms, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (query_id, query_type, query_text, query_tile_id,
+                 json.dumps(filters), result_count, latency_ms, now),
+            )
+            conn.commit()
+    except Exception as e:
+        logger.warning(f"Failed to log query: {e}")
