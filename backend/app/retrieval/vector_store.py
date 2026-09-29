@@ -127,9 +127,11 @@ class VectorStore:
 
         fid = self._tile_to_id[tile_id]
         if fid < self.index.ntotal:
-            return faiss.rev_swig_ptr(
-                self.index.get_xb() + fid * self.dimension, self.dimension
-            ).copy()
+            try:
+                return self.index.reconstruct(int(fid)).copy()
+            except Exception as e:
+                logger.warning(f"Failed to reconstruct vector for fid {fid}: {e}")
+                return None
 
         return None
 

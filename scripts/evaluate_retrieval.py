@@ -60,7 +60,7 @@ def load_relevance_dataset(csv_path: Path) -> Dict[str, Dict[str, Any]]:
     return queries
 
 
-def evaluate_retrieval():
+def evaluate_retrieval(model_path: str = None, index_path: str = None):
     settings = get_settings()
     db_path = get_db_path()
     init_db(db_path)
@@ -73,6 +73,18 @@ def evaluate_retrieval():
         return
 
     logger.info(f"Loaded {len(gt_queries)} benchmark queries for evaluation.")
+
+    # Custom model and index if provided
+    custom_model = None
+    custom_store = None
+    if model_path:
+        from app.embeddings.clip_model import RemoteCLIPEmbeddingModel
+        logger.info(f"Using evaluated model: {model_path}")
+        custom_model = RemoteCLIPEmbeddingModel(model_path=model_path, device=settings.device)
+    if index_path:
+        from app.retrieval.vector_store import VectorStore
+        logger.info(f"Using evaluated vector index: {index_path}")
+        custom_store = VectorStore(index_path=index_path)
 
     recall_at_1 = []
     recall_at_5 = []
@@ -87,7 +99,12 @@ def evaluate_retrieval():
         relevant_set = qdata["relevant_tiles"]
 
         t0 = time.perf_counter()
-        res = semantic_search(query=query_text, top_k=20)
+        res = semantic_search(
+            query=query_text,
+            top_k=20,
+            model=custom_model,
+            store=custom_store,
+        )
         elapsed_ms = (time.perf_counter() - t0) * 1000.0
         latencies.append(elapsed_ms)
 
@@ -180,4 +197,10 @@ def evaluate_retrieval():
 
 
 if __name__ == "__main__":
-    evaluate_retrieval()
+    import argparse
+    parser = argparse.ArgumentParser(description="GeoNexa Retrieval Evaluation Benchmark")
+    parser.add_argument("--model-path", type=str, default=None, help="Custom model checkpoint path (.pt)")
+    parser.add_argument("--index-path", type=str, default=None, help="Custom FAISS index file path")
+    args = parser.parse_args()
+
+    evaluate_retrieval(model_path=args.model_path, index_path=args.index_path)

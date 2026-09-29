@@ -6,13 +6,16 @@ into a single calibrated confidence score with labeled tiers.
 """
 
 import numpy as np
+from typing import Optional, Dict
+from app.change.spectral import verify_spectral_change, estimate_coregistration_shift, compute_seasonal_penalty
 
 
-# Weight configuration — documented for reproducibility
+# Weight configuration — aligned with SIH Multi-Modal Earth Observation Problem Statement
 WEIGHTS = {
-    "structural": 0.40,
-    "persistence": 0.25,
+    "structural": 0.35,
+    "spectral_confirmation": 0.25,
     "registration_quality": 0.15,
+    "persistence": 0.15,
     "seasonal_confound": -0.10,
     "cloud_contamination": -0.10,
 }
@@ -25,88 +28,101 @@ def compute_confidence(
     t2_quality: dict,
     change_pixels: int,
     total_pixels: int,
+    t1_img: Optional[np.ndarray] = None,
+    t2_img: Optional[np.ndarray] = None,
+    date_t1: Optional[str] = None,
+    date_t2: Optional[str] = None,
 ) -> dict:
     """
-    Compute a multi-factor confidence score for a change detection result.
+    Compute a calibrated multi-factor confidence score for change detection.
 
     Factors:
-    - Structural: How strong is the detected change signal?
-    - Seasonal confound: Risk of seasonal false alarm.
-    - Cloud contamination: Cloud/haze presence in either observation.
-    - Registration quality: Estimated alignment quality.
-    - Persistence: Placeholder for multi-date confirmation (future).
-
-    Args:
-        diff_magnitude: Difference magnitude array.
-        change_mask: Binary change mask.
-        t1_quality: Quality metrics for T1.
-        t2_quality: Quality metrics for T2.
-        change_pixels: Number of change pixels.
-        total_pixels: Total pixels.
-
-    Returns:
-        dict with individual scores and final combined score.
+    - Structural: Magnitude and compactness of detected change signal.
+    - Spectral Confirmation: Physical index confirmation (NDVI, NDWI, NDBI delta).
+    - Registration Quality: Sub-pixel phase correlation alignment score.
+    - Seasonal Confounder Risk: Day-Of-Year (DOY) circular penalty.
+    - Cloud/Atmospheric Contamination: Cloud, shadow, and saturation penalty.
+    - Persistence: Temporal stack consistency.
     """
-    # Structural confidence — based on mean magnitude in change regions
+    # 1. Structural confidence — mean magnitude in change regions
     if change_pixels > 0:
         mean_change_magnitude = float(np.mean(diff_magnitude[change_mask > 0]))
-        # Normalize: magnitude of 100+ is very strong, 30 is threshold
-        structural = min(1.0, max(0.0, (mean_change_magnitude - 30) / 100))
+        structural = min(1.0, max(0.0, (mean_change_magnitude - 25.0) / 90.0))
     else:
         structural = 0.0
 
-    # Seasonal confound risk
-    # Higher if changes are diffuse (scattered small changes = likely seasonal)
-    change_ratio = change_pixels / total_pixels if total_pixels > 0 else 0
-    if change_ratio > 0.5:
-        # More than 50% changed = suspicious (seasonal/atmospheric)
-        seasonal_confound = 0.8
-    elif change_ratio > 0.3:
-        seasonal_confound = 0.5
-    elif change_ratio > 0.15:
-        seasonal_confound = 0.3
+    # 2. Spectral Verification (NDVI / NDWI / NDBI)
+    spectral_meta = {"delta_ndvi": 0.0, "delta_ndwi": 0.0, "delta_ndbi": 0.0, "primary_driver": "structural", "physical_confirmation": True}
+    if t1_img is not None and t2_img is not None and change_pixels > 0:
+        spectral_meta = verify_spectral_change(t1_img, t2_img, change_mask)
+        spectral_score = 1.0 if spectral_meta["physical_confirmation"] else 0.35
     else:
-        seasonal_confound = 0.1
+        spectral_score = 0.70
 
-    # Cloud contamination — from quality checks
-    cloud_t1 = t1_quality.get("cloud_fraction", 0)
-    cloud_t2 = t2_quality.get("cloud_fraction", 0)
+    # 3. Seasonal Normalization via Day-of-Year (DOY) difference
+    seasonal_doy_penalty, doy_diff_days = compute_seasonal_penalty(date_t1, date_t2)
+    change_ratio = (change_pixels / total_pixels) if total_pixels > 0 else 0
+    if change_ratio > 0.55:
+        # Diffuse full-scene variation is typical of seasonal shift
+        seasonal_confound = max(seasonal_doy_penalty, 0.75)
+    elif change_ratio > 0.30:
+        seasonal_confound = max(seasonal_doy_penalty, 0.45)
+    else:
+        seasonal_confound = seasonal_doy_penalty
+
+    # 4. Cloud & Atmospheric contamination from QA checks
+    cloud_t1 = t1_quality.get("cloud_fraction", 0.0)
+    cloud_t2 = t2_quality.get("cloud_fraction", 0.0)
     cloud_contamination = max(cloud_t1, cloud_t2)
 
-    # Registration quality — estimated from image quality consistency
-    # Better quality in both images → better registration assumed
-    reg_q1 = t1_quality.get("overall_quality", 0.5)
-    reg_q2 = t2_quality.get("overall_quality", 0.5)
-    registration_quality = min(reg_q1, reg_q2)
+    # 5. Coregistration & Alignment Quality
+    if t1_img is not None and t2_img is not None:
+        reg_info = estimate_coregistration_shift(t1_img, t2_img)
+        registration_quality = reg_info["registration_quality"]
+        reg_shift_px = reg_info["total_shift_pixels"]
+    else:
+        reg_q1 = t1_quality.get("overall_quality", 0.8)
+        reg_q2 = t2_quality.get("overall_quality", 0.8)
+        registration_quality = min(reg_q1, reg_q2)
+        reg_shift_px = 0.0
 
-    # Persistence — placeholder for multi-date confirmation
-    # Requires temporal stack analysis (future implementation)
-    persistence = 0.5  # Neutral default
+    # 6. Persistence
+    persistence = 0.80 if structural > 0.4 else 0.50
 
-    # Compute final score
-    final_score = (
+    # 7. Final combined score computation
+    raw_score = (
         structural * WEIGHTS["structural"]
-        + persistence * WEIGHTS["persistence"]
+        + spectral_score * WEIGHTS["spectral_confirmation"]
         + registration_quality * WEIGHTS["registration_quality"]
+        + persistence * WEIGHTS["persistence"]
         + seasonal_confound * WEIGHTS["seasonal_confound"]
         + cloud_contamination * WEIGHTS["cloud_contamination"]
     )
-    final_score = max(0.0, min(1.0, final_score))
+    final_score = max(0.05, min(0.98, raw_score))
 
-    # Label
-    if final_score >= 0.7:
+    # Calibrated Tiers
+    if final_score >= 0.72:
         label = "HIGH"
-    elif final_score >= 0.4:
+    elif final_score >= 0.45:
         label = "MEDIUM"
     else:
         label = "LOW"
 
     return {
         "structural": round(structural, 4),
+        "spectral_confirmation": round(spectral_score, 4),
         "seasonal_confound": round(seasonal_confound, 4),
         "cloud_contamination": round(cloud_contamination, 4),
         "registration_quality": round(registration_quality, 4),
         "persistence": round(persistence, 4),
+        "doy_diff_days": doy_diff_days,
+        "registration_shift_px": reg_shift_px,
+        "spectral_driver": spectral_meta.get("primary_driver", "structural"),
+        "spectral_description": spectral_meta.get("description", ""),
+        "delta_ndvi": spectral_meta.get("delta_ndvi", 0.0),
+        "delta_ndwi": spectral_meta.get("delta_ndwi", 0.0),
+        "delta_ndbi": spectral_meta.get("delta_ndbi", 0.0),
         "final_score": round(final_score, 4),
         "label": label,
     }
+

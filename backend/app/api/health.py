@@ -34,7 +34,9 @@ async def health_check():
 
     # Check model weights
     model_path = Path(settings.model_path)
-    if model_path.exists():
+    if model_path.is_file():
+        checks["model_weights"] = True
+    elif model_path.is_dir():
         checks["model_weights"] = any(
             model_path.glob("*.bin")
         ) or any(
@@ -43,8 +45,7 @@ async def health_check():
             model_path.glob("*.pt")
         )
     else:
-        # Models may be downloaded by open_clip automatically
-        checks["model_weights"] = True
+        checks["model_weights"] = False
 
     # Try loading embedding model
     try:

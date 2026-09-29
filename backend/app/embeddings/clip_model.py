@@ -128,21 +128,40 @@ class RemoteCLIPEmbeddingModel(EmbeddingModel):
 
         return features.cpu().numpy().flatten().astype(np.float32)
 
-    def encode_text(self, text: str) -> np.ndarray:
+    def encode_text(self, text: str, ensemble: bool = True) -> np.ndarray:
         """
         Encode a text query into an L2-normalized embedding vector.
 
+        Supports remote sensing prompt ensembling across multiple domain templates
+        to significantly boost cross-modal semantic alignment and retrieval precision.
+
         Args:
             text: Natural language search string.
+            ensemble: If True, ensembles multiple domain-adapted prompts.
 
         Returns:
             L2-normalized embedding vector of shape (512,).
         """
-        tokens = self._tokenizer([text]).to(self._device)
+        clean_text = text.strip()
+        if not ensemble or len(clean_text) == 0:
+            prompts = [clean_text]
+        else:
+            prompts = [
+                clean_text,
+                f"a satellite photo of {clean_text}",
+                f"satellite imagery showing {clean_text}",
+                f"aerial view of {clean_text}",
+                f"remote sensing capture of {clean_text}",
+            ]
+
+        tokens = self._tokenizer(prompts).to(self._device)
 
         with torch.no_grad():
             features = self._model.encode_text(tokens)
             features = features / features.norm(dim=-1, keepdim=True)
+            if len(prompts) > 1:
+                features = features.mean(dim=0, keepdim=True)
+                features = features / features.norm(dim=-1, keepdim=True)
 
         return features.cpu().numpy().flatten().astype(np.float32)
 

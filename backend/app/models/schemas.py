@@ -37,6 +37,9 @@ class SearchResult(BaseModel):
     """A single search result."""
     tile_id: str
     similarity: float
+    raw_similarity: Optional[float] = None
+    confidence: Optional[float] = None
+    match_percentage: Optional[float] = None
     image_url: str
     location: dict  # {"lat": ..., "lon": ...}
     bbox: list[float]
@@ -47,8 +50,13 @@ class SearchResult(BaseModel):
 
 
 class SearchResponse(BaseModel):
-    """Search response with ranked results."""
+    """Search response with ranked results and parsed query intent."""
     query_id: str
+    query: Optional[str] = None
+    effective_prompt: Optional[str] = None
+    parsed_intent: Optional[str] = None
+    is_change_query: Optional[bool] = None
+    extracted_filters: Optional[dict] = None
     results: list[SearchResult]
     total: int
     latency_ms: float
@@ -135,10 +143,18 @@ class ChangeRequest(BaseModel):
 class ChangeConfidence(BaseModel):
     """Confidence breakdown for a change analysis."""
     structural: float = Field(..., ge=0, le=1)
+    spectral_confirmation: Optional[float] = None
     seasonal_confound: float = Field(..., ge=0, le=1)
     cloud_contamination: float = Field(..., ge=0, le=1)
     registration_quality: float = Field(..., ge=0, le=1)
     persistence: float = Field(default=0.0, ge=0, le=1)
+    doy_diff_days: Optional[int] = 0
+    registration_shift_px: Optional[float] = 0.0
+    spectral_driver: Optional[str] = None
+    spectral_description: Optional[str] = None
+    delta_ndvi: Optional[float] = None
+    delta_ndwi: Optional[float] = None
+    delta_ndbi: Optional[float] = None
     final_score: float = Field(..., ge=0, le=1)
     label: str  # HIGH, MEDIUM, LOW
 
@@ -176,8 +192,13 @@ class ChangeResult(BaseModel):
 
 class QueryRequest(BaseModel):
     """General query to be routed."""
-    text: str
+    text: Optional[str] = None
+    query: Optional[str] = None
     tile_id: Optional[str] = None  # context tile if available
+
+    @property
+    def query_text(self) -> str:
+        return self.text or self.query or ""
 
 
 class QueryClassification(BaseModel):

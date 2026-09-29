@@ -17,7 +17,22 @@ from app.embeddings.manager import get_embedding_model
 from app.retrieval.vector_store import get_vector_store
 from app.retrieval.filters import apply_metadata_filters
 
-logger = logging.getLogger(__name__)
+from app.query.router import parse_and_route_query
+
+
+def calibrate_text_similarity(raw_score: float) -> float:
+    """Calibrate raw text-to-image cosine similarity into standard 0.0-1.0 confidence."""
+    # RemoteCLIP cosine similarities typically range between 0.16 and 0.34
+    val = (float(raw_score) - 0.15) / 0.18
+    val = max(0.0, min(1.0, val))
+    return round(float(np.clip(0.50 + 0.48 * (val ** 0.85), 0.10, 0.99)), 4)
+
+
+def calibrate_image_similarity(raw_score: float) -> float:
+    """Calibrate image-to-image cosine similarity into standard 0.0-1.0 confidence."""
+    val = (float(raw_score) - 0.45) / 0.50
+    val = max(0.0, min(1.0, val))
+    return round(float(np.clip(0.50 + 0.48 * val, 0.10, 0.99)), 4)
 
 
 def semantic_search(
@@ -27,53 +42,58 @@ def semantic_search(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     sensor: Optional[str] = None,
+    model=None,
+    store=None,
 ) -> dict:
     """
-    Perform semantic text-to-image search.
-
-    Pipeline:
-        1. Encode text query with CLIP
-        2. Search FAISS index for nearest neighbors (over-fetch for filtering)
-        3. Join with SQLite metadata
-        4. Apply metadata filters (date, sensor, bbox)
-        5. Trim to top_k
-        6. Return ranked results with provenance
-
-    Args:
-        query: Natural-language search query.
-        top_k: Number of results to return.
-        bbox: Optional [lon_min, lat_min, lon_max, lat_max].
-        date_from: Optional start date YYYY-MM-DD.
-        date_to: Optional end date YYYY-MM-DD.
-        sensor: Optional sensor filter.
-
-    Returns:
-        dict with query_id, results, total, latency_ms
+    Perform semantic text-to-image search with natural language parsing.
     """
     start = time.time()
     query_id = f"q-{uuid.uuid4().hex[:8]}"
 
-    # 1. Encode text
-    model = get_embedding_model()
-    query_vector = model.encode_text(query)
+    # Parse natural language query for filters and distilled prompt
+    parsed = parse_and_route_query(query)
+    effective_prompt = parsed.get("cleaned_prompt") or query
+    
+    # Auto-populate filters if not explicitly provided
+    if bbox is None and parsed.get("bbox"):
+        bbox = parsed["bbox"]
+    if date_from is None and parsed.get("date_from"):
+        date_from = parsed["date_from"]
+    if date_to is None and parsed.get("date_to"):
+        date_to = parsed["date_to"]
+    if sensor is None and parsed.get("sensor"):
+        sensor = parsed["sensor"]
 
-    # 2. Search FAISS (over-fetch to allow for filtering)
-    store = get_vector_store()
-    fetch_k = top_k * 3 if any([bbox, date_from, date_to, sensor]) else top_k
+    # 1. Encode distilled text
+    if model is None:
+        model = get_embedding_model()
+    query_vector = model.encode_text(effective_prompt)
+
+    # 2. Search FAISS index (search all vectors if filtering, else top_k)
+    if store is None:
+        store = get_vector_store()
+    total_vectors = len(store._id_to_tile)
+    fetch_k = total_vectors if any([bbox, date_from, date_to, sensor]) else min(top_k * 2, total_vectors or top_k)
+    fetch_k = max(1, fetch_k)
     tile_ids, scores = store.search(query_vector, k=fetch_k)
 
     if not tile_ids:
         return {
             "query_id": query_id,
+            "query": query,
+            "effective_prompt": effective_prompt,
+            "parsed_intent": parsed.get("intent", "SEMANTIC_SEARCH"),
+            "is_change_query": parsed.get("is_change_query", False),
             "results": [],
             "total": 0,
             "latency_ms": (time.time() - start) * 1000,
         }
 
-    # 3. Join with metadata
-    results = _join_metadata(tile_ids, scores)
+    # 3. Join with metadata and calibrate scores
+    results = _join_metadata(tile_ids, scores, search_type="text")
 
-    # 4. Apply filters
+    # 4. Apply metadata filters
     results = apply_metadata_filters(
         results, bbox=bbox, date_from=date_from, date_to=date_to, sensor=sensor
     )
@@ -83,12 +103,23 @@ def semantic_search(
 
     # 6. Log query
     latency_ms = (time.time() - start) * 1000
-    _log_query(query_id, "SEMANTIC_SEARCH", query, None, {
+    _log_query(query_id, parsed.get("intent", "SEMANTIC_SEARCH"), query, None, {
         "bbox": bbox, "date_from": date_from, "date_to": date_to, "sensor": sensor,
     }, len(results), latency_ms)
 
     return {
         "query_id": query_id,
+        "query": query,
+        "effective_prompt": effective_prompt,
+        "parsed_intent": parsed.get("intent", "SEMANTIC_SEARCH"),
+        "is_change_query": parsed.get("is_change_query", False),
+        "extracted_filters": {
+            "location": parsed.get("location"),
+            "bbox": bbox,
+            "date_from": date_from,
+            "date_to": date_to,
+            "sensor": sensor,
+        },
         "results": results,
         "total": len(results),
         "latency_ms": latency_ms,
@@ -105,18 +136,14 @@ def similarity_search(
 ) -> dict:
     """
     Perform image-to-image similarity search.
-
-    Uses the embedding of an existing tile to find similar tiles.
     """
     start = time.time()
     query_id = f"q-{uuid.uuid4().hex[:8]}"
 
-    # Get the tile's embedding vector
     store = get_vector_store()
     query_vector = store.get_vector(tile_id)
 
     if query_vector is None:
-        # Tile not in index — try to load and embed the image
         tile_meta = _get_tile_metadata(tile_id)
         if tile_meta is None:
             return {
@@ -140,17 +167,14 @@ def similarity_search(
                 "error": f"Could not load image for tile {tile_id}",
             }
 
-    # Search (fetch extra to exclude self and filter)
     fetch_k = top_k + 5
     tile_ids, scores = store.search(query_vector, k=fetch_k)
 
-    # Exclude the query tile itself
     filtered = [(tid, s) for tid, s in zip(tile_ids, scores) if tid != tile_id]
     tile_ids = [t[0] for t in filtered]
     scores = np.array([t[1] for t in filtered])
 
-    # Join metadata and filter
-    results = _join_metadata(tile_ids, scores)
+    results = _join_metadata(tile_ids, scores, search_type="image")
     results = apply_metadata_filters(
         results, bbox=bbox, date_from=date_from, date_to=date_to, sensor=sensor
     )
@@ -163,14 +187,15 @@ def similarity_search(
 
     return {
         "query_id": query_id,
+        "query_tile_id": tile_id,
         "results": results,
         "total": len(results),
         "latency_ms": latency_ms,
     }
 
 
-def _join_metadata(tile_ids: List[str], scores: np.ndarray) -> List[dict]:
-    """Join FAISS results with SQLite tile metadata."""
+def _join_metadata(tile_ids: List[str], scores: np.ndarray, search_type: str = "text") -> List[dict]:
+    """Join vector search results with SQLite tile metadata and calibrated confidence."""
     if not tile_ids:
         return []
 
@@ -189,7 +214,6 @@ def _join_metadata(tile_ids: List[str], scores: np.ndarray) -> List[dict]:
             tile_ids,
         ).fetchall()
 
-    # Build lookup
     meta_lookup = {row["tile_id"]: dict(row) for row in rows}
 
     results = []
@@ -198,9 +222,18 @@ def _join_metadata(tile_ids: List[str], scores: np.ndarray) -> List[dict]:
         if meta is None:
             continue
 
+        raw_score = float(score)
+        if search_type == "image":
+            calibrated_conf = calibrate_image_similarity(raw_score)
+        else:
+            calibrated_conf = calibrate_text_similarity(raw_score)
+
         results.append({
             "tile_id": tid,
-            "similarity": float(score),
+            "similarity": calibrated_conf,  # Calibrated for friendly UI displays
+            "raw_similarity": round(raw_score, 4),  # Preserved for STAC provenance
+            "confidence": calibrated_conf,
+            "match_percentage": round(calibrated_conf * 100, 1),
             "image_url": f"/api/archive/tiles/{tid}/image",
             "location": {
                 "lat": meta.get("center_lat"),

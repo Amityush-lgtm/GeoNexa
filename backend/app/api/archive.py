@@ -122,10 +122,13 @@ async def get_tile_image(tile_id: str):
     if not rows:
         raise HTTPException(status_code=404, detail=f"Tile {tile_id} not found")
 
-    file_path = rows[0]["file_path"]
+    file_path = Path(rows[0]["file_path"])
+    if not file_path.is_absolute():
+        from app.config import PROJECT_ROOT
+        file_path = PROJECT_ROOT / file_path
 
-    if not Path(file_path).exists():
-        raise HTTPException(status_code=404, detail=f"Tile image file not found")
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"Tile image file not found: {file_path}")
 
     try:
         import rasterio

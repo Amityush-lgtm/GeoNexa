@@ -12,9 +12,10 @@ export default function ConfidenceBreakdown({ details, score }) {
 
   const metrics = [
     { label: 'Structural Magnitude', value: details.structural, icon: Layers, note: 'Raw pixel/feature shift' },
-    { label: 'Seasonal Confounder Risk', value: details.seasonal_confound, icon: Sun, inverted: true, note: 'Vegetation / crop variation' },
-    { label: 'Cloud / Haze Contamination', value: details.cloud_contamination, icon: Cloud, inverted: true, note: 'Atmospheric interference' },
-    { label: 'Registration Quality', value: details.registration_quality, icon: CheckCircle, note: 'Spatial alignment accuracy' },
+    { label: 'Spectral Confirmation', value: details.spectral_confirmation, icon: CheckCircle, note: details.spectral_description || 'Physical index confirmation' },
+    { label: 'Seasonal Confounder Risk', value: details.seasonal_confound, icon: Sun, inverted: true, note: `DOY delta: ${details.doy_diff_days || 0} days` },
+    { label: 'Cloud / Haze Contamination', value: details.cloud_contamination, icon: Cloud, inverted: true, note: 'Atmospheric QA interference' },
+    { label: 'Registration Quality', value: details.registration_quality, icon: CheckCircle, note: `Shift: ${details.registration_shift_px || 0}px (sub-pixel)` },
     { label: 'Temporal Persistence', value: details.persistence, icon: AlertTriangle, note: 'Consistency across observations' },
   ];
 
@@ -38,6 +39,30 @@ export default function ConfidenceBreakdown({ details, score }) {
           </span>
         </div>
       </div>
+
+      {/* Spectral Indices Chips */}
+      {(details.delta_ndvi !== undefined || details.delta_ndwi !== undefined) && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+          <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '0.4rem 0.6rem', borderRadius: '6px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Δ NDVI</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: details.delta_ndvi < -0.1 ? '#fb7185' : '#34d399', fontFamily: 'var(--font-mono)' }}>
+              {details.delta_ndvi > 0 ? `+${details.delta_ndvi.toFixed(3)}` : details.delta_ndvi?.toFixed(3) || '0.000'}
+            </div>
+          </div>
+          <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '0.4rem 0.6rem', borderRadius: '6px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Δ NDWI</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: details.delta_ndwi > 0.1 ? '#38bdf8' : 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
+              {details.delta_ndwi > 0 ? `+${details.delta_ndwi.toFixed(3)}` : details.delta_ndwi?.toFixed(3) || '0.000'}
+            </div>
+          </div>
+          <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)', padding: '0.4rem 0.6rem', borderRadius: '6px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Δ NDBI</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: details.delta_ndbi > 0.1 ? '#fbbf24' : 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
+              {details.delta_ndbi > 0 ? `+${details.delta_ndbi.toFixed(3)}` : details.delta_ndbi?.toFixed(3) || '0.000'}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         {metrics.map((m, idx) => {

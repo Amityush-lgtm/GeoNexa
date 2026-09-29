@@ -8,13 +8,18 @@ __pycache__/
 *.obj
 *.o
 
-# Distribution / packaging
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
 .Python
 env/
 venv/
+venv_cuda/
+.venv/
 ENV/
-env.bak/
-venv.bak/
+
+
 
 # Node & Frontend
 node_modules/
@@ -39,6 +44,7 @@ checkpoints/*
 *.db
 *.sqlite
 *.sqlite3
+data/public/change_results/
 
 # Generated Indexes and Search State
 indexes/*
@@ -60,6 +66,10 @@ htmlcov/
 *.swo
 Thumbs.db
 .DS_Store
+
+# Reports
+reports/*
+!reports/.gitkeep
 
 # Logs
 *.log

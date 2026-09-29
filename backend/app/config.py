@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     faiss_index_path: str = Field(default=str(PROJECT_ROOT / "indexes" / "main.index"))
     database_path: str = Field(default=str(PROJECT_ROOT / "data" / "public" / "metadata" / "metadata.db"))
 
+    def model_post_init(self, __context) -> None:
+        """Resolve relative paths against PROJECT_ROOT."""
+        for field in ("data_dir", "model_path", "faiss_index_path", "database_path"):
+            value = getattr(self, field)
+            if not Path(value).is_absolute():
+                object.__setattr__(self, field, str(PROJECT_ROOT / value))
+
     # Offline mode
     offline_mode: bool = Field(default=True)
 

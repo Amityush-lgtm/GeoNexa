@@ -140,3 +140,33 @@ def get_provenance_by_entity(entity_type: str, entity_id: str) -> list[dict]:
         results.append(r)
 
     return results
+
+
+def get_recent_provenance(limit: int = 50) -> list[dict]:
+    """Get the most recent provenance records."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT * FROM provenance_records
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+
+    results = []
+    for row in rows:
+        r = dict(row)
+        if r.get("parameters"):
+            try:
+                r["parameters"] = json.loads(r["parameters"])
+            except json.JSONDecodeError:
+                pass
+        if r.get("result_summary"):
+            try:
+                r["result_summary"] = json.loads(r["result_summary"])
+            except json.JSONDecodeError:
+                pass
+        results.append(r)
+
+    return results

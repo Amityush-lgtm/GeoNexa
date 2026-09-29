@@ -102,13 +102,14 @@ def normalize_pair(
 
     # Per-channel histogram matching of T2 to T1
     if t1.ndim == 3 and t2.ndim == 3:
-        channels = t1.shape[2]
-        t2_matched = np.zeros_like(t2_float)
+        channels = min(t1.shape[2], t2.shape[2])
+        t1_matched = t1_float[:, :, :channels]
+        t2_matched = np.zeros((t2_float.shape[0], t2_float.shape[1], channels), dtype=np.float32)
         for c in range(channels):
             t2_matched[:, :, c] = _histogram_match_channel(
-                t2_float[:, :, c], t1_float[:, :, c]
+                t2_float[:, :, c], t1_matched[:, :, c]
             )
-        return t1_float, t2_matched
+        return t1_matched, t2_matched
     else:
         t2_matched = _histogram_match_channel(t2_float, t1_float)
         return t1_float, t2_matched

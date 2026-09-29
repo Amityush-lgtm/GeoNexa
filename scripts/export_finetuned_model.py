@@ -37,30 +37,54 @@ logger = logging.getLogger(__name__)
 def export_checkpoint(
     checkpoint_path: str,
     output_path: str,
+    base_model_path: str = None,
+    alpha: float = 0.5,
     include_optimizer: bool = False,
 ):
     """
     Export a training checkpoint as a clean deployment-ready .pt file.
+    Supports WiSE-FT (Weight-Space Ensemble for Fine-Tuning) to blend
+    fine-tuned domain features with the foundation model's robust zero-shot abilities.
 
     Args:
         checkpoint_path: Path to the training checkpoint.
         output_path: Path for the exported model.
+        base_model_path: Optional path to baseline pretrained model for weight interpolation.
+        alpha: Interpolation weight (0.0 = 100% baseline, 1.0 = 100% fine-tuned).
         include_optimizer: Include optimizer state (for resume training).
     """
     logger.info(f"Loading checkpoint: {checkpoint_path}")
     ckpt = torch.load(checkpoint_path, map_location="cpu")
 
-    # Extract just the model state dict
+    # Extract fine-tuned state dict
     if "state_dict" in ckpt:
         state_dict = ckpt["state_dict"]
     else:
         state_dict = ckpt
 
-    # Clean module prefix if present
     clean_sd = {}
     for k, v in state_dict.items():
         k_clean = k.replace("module.", "") if k.startswith("module.") else k
         clean_sd[k_clean] = v
+
+    # Optional WiSE-FT Weight Interpolation
+    if base_model_path and Path(base_model_path).exists():
+        logger.info(f"Applying WiSE-FT weight interpolation with alpha={alpha:.2f}...")
+        logger.info(f"Base model: {base_model_path}")
+        base_ckpt = torch.load(base_model_path, map_location="cpu")
+        base_sd = base_ckpt.get("state_dict", base_ckpt)
+        base_clean = {
+            (k.replace("module.", "") if k.startswith("module.") else k): v
+            for k, v in base_sd.items()
+        }
+
+        interpolated_count = 0
+        for k in list(clean_sd.keys()):
+            if k in base_clean and clean_sd[k].shape == base_clean[k].shape:
+                if clean_sd[k].dtype in (torch.float32, torch.float16, torch.bfloat16):
+                    clean_sd[k] = (1.0 - alpha) * base_clean[k].to(clean_sd[k].dtype) + alpha * clean_sd[k]
+                    interpolated_count += 1
+        logger.info(f"Interpolated {interpolated_count} weight tensors.")
 
     # Build export package
     export = {
@@ -183,6 +207,8 @@ if __name__ == "__main__":
         help="Output model path",
     )
     parser.add_argument("--include-optimizer", action="store_true")
+    parser.add_argument("--base-model", default=None, help="Base model checkpoint for WiSE-FT interpolation")
+    parser.add_argument("--alpha", type=float, default=0.5, help="WiSE-FT interpolation weight (0.0=base, 1.0=finetuned)")
     parser.add_argument("--verify", action="store_true", default=True)
 
     args = parser.parse_args()
@@ -190,6 +216,8 @@ if __name__ == "__main__":
     output = export_checkpoint(
         checkpoint_path=args.checkpoint,
         output_path=args.output,
+        base_model_path=args.base_model,
+        alpha=args.alpha,
         include_optimizer=args.include_optimizer,
     )
 

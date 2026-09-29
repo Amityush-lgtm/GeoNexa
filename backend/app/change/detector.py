@@ -72,13 +72,17 @@ def detect_changes(
         if t1_img is None or t2_img is None:
             return _error_result(analysis_id, tile_id, t1_tile_id, t2_tile_id, "Failed to load images")
 
-        # Ensure same dimensions
+        # Ensure same spatial and channel dimensions
         if t1_img.shape != t2_img.shape:
-            # Resize to match
             min_h = min(t1_img.shape[0], t2_img.shape[0])
             min_w = min(t1_img.shape[1], t2_img.shape[1])
-            t1_img = t1_img[:min_h, :min_w]
-            t2_img = t2_img[:min_h, :min_w]
+            if t1_img.ndim == 3 and t2_img.ndim == 3:
+                min_c = min(t1_img.shape[2], t2_img.shape[2])
+                t1_img = t1_img[:min_h, :min_w, :min_c]
+                t2_img = t2_img[:min_h, :min_w, :min_c]
+            else:
+                t1_img = t1_img[:min_h, :min_w]
+                t2_img = t2_img[:min_h, :min_w]
 
         # 2. Quality check
         q1 = quality_check(t1_img)
@@ -106,7 +110,18 @@ def detect_changes(
         total_pixels = int(binary_mask.shape[0] * binary_mask.shape[1])
         change_percentage = (change_pixels / total_pixels * 100) if total_pixels > 0 else 0
 
-        # 9. Compute confidence
+        # Fetch observation dates if available
+        d1, d2 = None, None
+        try:
+            with get_connection() as conn:
+                r1 = conn.execute("SELECT s.acquisition_date FROM tiles t JOIN scenes s ON t.scene_id = s.scene_id WHERE t.tile_id = ?", (t1_tile_id,)).fetchone()
+                r2 = conn.execute("SELECT s.acquisition_date FROM tiles t JOIN scenes s ON t.scene_id = s.scene_id WHERE t.tile_id = ?", (t2_tile_id,)).fetchone()
+                if r1 and r1[0]: d1 = r1[0]
+                if r2 and r2[0]: d2 = r2[0]
+        except Exception:
+            pass
+
+        # 9. Compute confidence with spectral and seasonal verification
         confidence = compute_confidence(
             diff_magnitude=diff_magnitude,
             change_mask=binary_mask,
@@ -114,6 +129,10 @@ def detect_changes(
             t2_quality=q2,
             change_pixels=change_pixels,
             total_pixels=total_pixels,
+            t1_img=t1_img,
+            t2_img=t2_img,
+            date_t1=d1,
+            date_t2=d2,
         )
 
         # 10. Save change mask
@@ -204,7 +223,7 @@ def _load_image(path: str) -> Optional[np.ndarray]:
     try:
         import rasterio
         with rasterio.open(path) as ds:
-            bands = min(ds.count, 3)
+            bands = min(ds.count, 4)
             data = ds.read(list(range(1, bands + 1)))
 
             if bands == 1:

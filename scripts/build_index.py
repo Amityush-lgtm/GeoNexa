@@ -45,10 +45,32 @@ def compute_content_hash(file_path: Path) -> str:
     return h.hexdigest()
 
 
-def run_build_index(batch_size: int = 32, force_rebuild: bool = False):
+def run_build_index(
+    batch_size: int = 32,
+    force_rebuild: bool = False,
+    model_path: str = None,
+    index_path: str = None,
+):
     settings = get_settings()
     db_path = get_db_path()
     init_db(db_path)
+
+    # Allow custom model checkpoint and index location
+    if model_path:
+        from app.embeddings.clip_model import RemoteCLIPEmbeddingModel
+        model = RemoteCLIPEmbeddingModel(model_path=model_path, device=settings.device)
+    else:
+        model = get_embedding_model()
+
+    target_index_path = index_path or settings.faiss_index_path
+    if force_rebuild and Path(target_index_path).exists():
+        logger.info("Force rebuild requested. Removing existing index...")
+        os.remove(target_index_path)
+        id_map_path = Path(target_index_path).with_suffix(".idmap.json")
+        if id_map_path.exists():
+            os.remove(id_map_path)
+
+    vector_store = VectorStore(dimension=512, index_path=target_index_path)
 
     # 1. Fetch all tiles from SQLite
     with get_connection(db_path) as conn:
@@ -60,22 +82,7 @@ def run_build_index(batch_size: int = 32, force_rebuild: bool = False):
 
     logger.info(f"Found {len(rows)} total tiles in archive to index.")
 
-    # 2. Initialize VectorStore
-    index_path = settings.faiss_index_path
-    if force_rebuild and Path(index_path).exists():
-        logger.info("Force rebuild requested. Removing existing index...")
-        os.remove(index_path)
-        id_map_path = Path(index_path).with_suffix(".idmap.json")
-        if id_map_path.exists():
-            os.remove(id_map_path)
-
-    vector_store = VectorStore(dimension=512, index_path=index_path)
-
-    # 3. Load RemoteCLIP model
-    logger.info(f"Loading embedding model ({settings.embedding_model})...")
-    model = get_embedding_model()
-
-    # 4. Check already indexed tiles
+    # 2. Check already indexed tiles
     with get_connection(db_path) as conn:
         existing_embeddings = conn.execute(
             "SELECT tile_id FROM embeddings WHERE model_name = ?", (model.model_name,)
@@ -155,6 +162,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="GeoNexa FAISS Vector Index Builder")
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--force-rebuild", action="store_true", help="Rebuild entire FAISS index from scratch")
+    parser.add_argument("--model-path", type=str, default=None, help="Path to custom model weights or fine-tuned checkpoint")
+    parser.add_argument("--index-path", type=str, default=None, help="Path to output FAISS index file")
     args = parser.parse_args()
 
-    run_build_index(batch_size=args.batch_size, force_rebuild=args.force_rebuild)
+    run_build_index(
+        batch_size=args.batch_size,
+        force_rebuild=args.force_rebuild,
+        model_path=args.model_path,
+        index_path=args.index_path,
+    )

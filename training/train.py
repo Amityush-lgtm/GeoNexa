@@ -549,7 +549,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=1e-5)
-    parser.add_argument("--unfreeze-layers", type=int, default=4)
+    parser.add_argument("--unfreeze-layers", "--unfreeze-last-n", dest="unfreeze_layers", type=int, default=4)
     parser.add_argument("--freeze-text", action="store_true", default=True)
     parser.add_argument("--no-freeze-text", dest="freeze_text", action="store_false")
 

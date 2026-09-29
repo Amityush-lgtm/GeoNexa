@@ -181,4 +181,10 @@ async def submit_review(request: ReviewRequest):
 def _tile_path(tile_id: str) -> str | None:
     """Look up the file path for a tile."""
     rows = execute_query("SELECT file_path FROM tiles WHERE tile_id = ?", (tile_id,))
-    return rows[0]["file_path"] if rows else None
+    if not rows:
+        return None
+    p = Path(rows[0]["file_path"])
+    if not p.is_absolute():
+        from app.config import PROJECT_ROOT
+        p = PROJECT_ROOT / p
+    return str(p)

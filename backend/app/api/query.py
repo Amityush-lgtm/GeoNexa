@@ -11,6 +11,7 @@ router = APIRouter()
 
 
 @router.post("", response_model=QueryClassification)
+@router.post("/route", response_model=QueryClassification)
 async def route_query(request: QueryRequest):
     """
     Classify and route a natural-language query.
@@ -18,7 +19,8 @@ async def route_query(request: QueryRequest):
     Returns the detected intent and parameters so the frontend
     can redirect to the appropriate workflow.
     """
-    result = classify_query(request.text, tile_id=request.tile_id)
+    text = request.query_text
+    result = classify_query(text, tile_id=request.tile_id)
 
     return QueryClassification(
         intent=result["intent"],
