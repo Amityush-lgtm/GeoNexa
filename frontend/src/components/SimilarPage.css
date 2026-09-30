@@ -1,0 +1,328 @@
+/* ─── GeoNexa Site Similarity Engine Styles ─── */
+.similar-page {
+  padding: 1.5rem 2.5rem 3.5rem;
+  max-width: 1440px;
+  margin: 0 auto;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  position: relative;
+}
+
+/* Header */
+.sp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.sp-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  margin-bottom: 0.5rem;
+}
+
+.sp-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a78bfa;
+  box-shadow: 0 0 8px #a78bfa;
+  animation: spPulse 2s infinite ease-in-out;
+}
+
+@keyframes spPulse {
+  0%, 100% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.sp-title {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.2vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.sp-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  color: rgba(224, 232, 245, 0.7);
+  max-width: 640px;
+  line-height: 1.45;
+}
+
+.sp-meta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.45rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-family: 'Chakra Petch', monospace;
+  color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+}
+
+/* ── Search & Filter Controls ── */
+.sp-controls-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(10, 22, 38, 0.8) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  padding: 1.25rem 1.5rem;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sp-input-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sp-input {
+  flex: 1;
+  min-width: 280px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-family: 'Chakra Petch', monospace;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.sp-input:focus {
+  border-color: #a78bfa;
+}
+
+.sp-select {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  color: #ffffff;
+  font-size: 0.82rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.sp-btn-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(167, 139, 250, 0.25);
+  border: 1px solid rgba(167, 139, 250, 0.5);
+  color: #ffffff;
+  padding: 0.65rem 1.3rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sp-btn-search:hover {
+  background: rgba(167, 139, 250, 0.4);
+  transform: translateY(-1px);
+}
+
+.sp-presets-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sp-presets-label {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.72rem;
+  color: rgba(224, 232, 245, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sp-preset-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.72rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sp-preset-btn:hover,
+.sp-preset-btn.active {
+  background: rgba(167, 139, 250, 0.18);
+  border-color: #a78bfa;
+  color: #ffffff;
+}
+
+/* ── Results Section ── */
+.sp-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.sp-results-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sp-results-meta {
+  font-size: 0.75rem;
+  color: rgba(224, 232, 245, 0.6);
+  font-family: 'Chakra Petch', monospace;
+}
+
+.sp-results-meta strong {
+  color: #34d399;
+}
+
+.sp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1.5rem;
+}
+
+.sp-card {
+  background: #02060d;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sp-card:hover {
+  border-color: rgba(167, 139, 250, 0.45);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+}
+
+.sp-img-frame {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: #050a14;
+  overflow: hidden;
+}
+
+.sp-img-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.sp-card:hover .sp-img-frame img {
+  transform: scale(1.05);
+}
+
+.sp-sim-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(6, 15, 28, 0.85);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  color: #34d399;
+  font-family: 'Chakra Petch', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  backdrop-filter: blur(8px);
+}
+
+.sp-card-body {
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.sp-tile-id {
+  font-family: 'Chakra Petch', monospace;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sp-tile-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.sp-tile-location {
+  font-size: 0.75rem;
+  color: rgba(224, 232, 245, 0.65);
+}
+
+.sp-card-footer {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sp-action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sp-action-btn:hover {
+  background: rgba(167, 139, 250, 0.2);
+  border-color: #a78bfa;
+  color: #ffffff;
+}
+
+@media (max-width: 640px) {
+  .similar-page {
+    padding: 1rem 1rem 2rem;
+  }
+}

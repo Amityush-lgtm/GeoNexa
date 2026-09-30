@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import LandingPage from './components/LandingPage';
 import Navbar from './components/Navbar';
 import SearchPage from './components/SearchPage';
 import InvestigationPage from './components/InvestigationPage';
@@ -8,12 +9,28 @@ import ProvenancePage from './components/ProvenancePage';
 import ArchivePage from './components/ArchivePage';
 
 export default function App() {
+  const [showLanding, setShowLanding] = useState(true);
   const [activeTab, setActiveTab] = useState('search');
-  const [selectedTileId, setSelectedTileId] = useState(null);
-  const [changeT1, setChangeT1] = useState(null);
-  const [changeT2, setChangeT2] = useState(null);
-  const [similarQueryTileId, setSimilarQueryTileId] = useState(null);
+
+  // Page-level state
+  const [selectedTileId, setSelectedTileId]           = useState(null);
+  const [changeT1, setChangeT1]                       = useState(null);
+  const [changeT2, setChangeT2]                       = useState(null);
+  const [similarQueryTileId, setSimilarQueryTileId]   = useState(null);
   const [selectedProvenanceId, setSelectedProvenanceId] = useState(null);
+
+  const handleEnterPlatform = (tab) => {
+    setShowLanding(false);
+    if (tab && typeof tab === 'string') {
+      setActiveTab(tab);
+    }
+    window.scrollTo({ top: 0 });
+  };
+
+  const handleBackToLanding = () => {
+    setShowLanding(true);
+    window.scrollTo({ top: 0 });
+  };
 
   const handleSelectTile = (tileId) => {
     setSelectedTileId(tileId);
@@ -36,9 +53,17 @@ export default function App() {
     setActiveTab('provenance');
   };
 
+  if (showLanding) {
+    return <LandingPage onEnter={handleEnterPlatform} />;
+  }
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onBackToLanding={handleBackToLanding}
+      />
 
       <main style={{ flex: 1, paddingBottom: '3rem' }}>
         {activeTab === 'search' && (
@@ -49,7 +74,6 @@ export default function App() {
             setActiveTab={setActiveTab}
           />
         )}
-
         {activeTab === 'investigate' && (
           <InvestigationPage
             tileId={selectedTileId}
@@ -59,7 +83,6 @@ export default function App() {
             setActiveTab={setActiveTab}
           />
         )}
-
         {activeTab === 'change' && (
           <ChangePage
             t1TileId={changeT1}
@@ -68,7 +91,6 @@ export default function App() {
             setActiveTab={setActiveTab}
           />
         )}
-
         {activeTab === 'similar' && (
           <SimilarPage
             queryTileId={similarQueryTileId}
@@ -77,22 +99,23 @@ export default function App() {
             setActiveTab={setActiveTab}
           />
         )}
-
         {activeTab === 'provenance' && (
-          <ProvenancePage
-            initialProvenanceId={selectedProvenanceId}
-          />
+          <ProvenancePage initialProvenanceId={selectedProvenanceId} />
         )}
-
-        {activeTab === 'archive' && (
-          <ArchivePage />
-        )}
+        {activeTab === 'archive' && <ArchivePage />}
       </main>
 
-      <footer style={{ borderTop: '1px solid var(--border-subtle)', padding: '1.25rem 2rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-dim)', background: 'rgba(10, 14, 23, 0.9)' }}>
-        GeoNexa — Semantic Earth Observation Search & Intelligence Platform | Smart India Hackathon 2026 (SIH26227)
+      <footer style={{
+        borderTop: '1px solid var(--border-subtle)',
+        padding: '1.1rem 2rem',
+        textAlign: 'center',
+        fontSize: '0.72rem',
+        color: 'var(--text-dim)',
+        background: 'rgba(6,9,18,0.92)',
+        letterSpacing: '0.04em',
+      }}>
+        GeoNexa — Semantic Earth Observation Search & Intelligence Platform &nbsp;|&nbsp; Smart India Hackathon 2026 (SIH26227)
       </footer>
-
     </div>
   );
 }
