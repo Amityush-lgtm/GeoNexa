@@ -4,7 +4,10 @@ Application configuration loaded from environment variables and .env file.
 
 import os
 from pathlib import Path
-from pydantic_settings import BaseSettings
+try:
+    from pydantic_settings import BaseSettings
+except ImportError:
+    from pydantic import BaseModel as BaseSettings
 from pydantic import Field
 
 

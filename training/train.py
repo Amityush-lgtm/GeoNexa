@@ -265,8 +265,22 @@ class RemoteCLIPTrainer:
 
     def _setup_dataloaders(self):
         """Create training and validation dataloaders."""
+        train_p = Path(self.config.train_pairs_json)
+        if not train_p.exists():
+            logger.warning(f"Train pairs manifest '{train_p}' not found! Auto-generating from EuroSAT Sentinel-2 dataset...")
+            try:
+                import torchvision.datasets
+                euro_dir = PROJECT_ROOT / "data" / "eurosat"
+                if not (euro_dir / "eurosat" / "2750").exists():
+                    logger.info("Downloading EuroSAT Sentinel-2 dataset...")
+                    torchvision.datasets.EuroSAT(root=str(euro_dir), download=True)
+                from scripts.prepare_eurosat_pairs import build_training_manifests
+                build_training_manifests(samples_per_class=600)
+            except Exception as e:
+                logger.error(f"Failed to auto-generate EuroSAT pairs: {e}")
+
         self.train_loader, self.val_loader = create_dataloaders(
-            train_json=self.config.train_pairs_json,
+            train_json=str(train_p),
             val_json=self.config.val_pairs_json if self.config.val_pairs_json else None,
             image_transform=self.preprocess,
             tokenizer=self.tokenizer,

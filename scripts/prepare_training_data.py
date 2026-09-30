@@ -130,10 +130,16 @@ def prepare_training_data(
         season_map=season_map,
     )
 
-    logger.info(f"  Generated {n_auto} auto-captioned pairs")
-
-    # ── Phase 2: Augment with curated RS query-tile assignments ──
-    logger.info("\n[Phase 2] Augmenting with curated remote sensing queries...")
+    if n_auto == 0:
+        logger.warning("No local GeoTIFF tiles found! Automatically preparing EuroSAT Sentinel-2 pairs...")
+        from scripts.prepare_eurosat_pairs import build_training_manifests
+        import torchvision.datasets
+        euro_dir = PROJECT_ROOT / "data" / "eurosat"
+        if not (euro_dir / "eurosat" / "2750").exists():
+            logger.info("Downloading EuroSAT Sentinel-2 dataset...")
+            torchvision.datasets.EuroSAT(root=str(euro_dir), download=True)
+        build_training_manifests(samples_per_class=600)
+        return
 
     with open(all_pairs_path, "r") as f:
         data = json.load(f)

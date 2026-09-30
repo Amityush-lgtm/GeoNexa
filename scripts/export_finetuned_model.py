@@ -53,8 +53,27 @@ def export_checkpoint(
         alpha: Interpolation weight (0.0 = 100% baseline, 1.0 = 100% fine-tuned).
         include_optimizer: Include optimizer state (for resume training).
     """
-    logger.info(f"Loading checkpoint: {checkpoint_path}")
-    ckpt = torch.load(checkpoint_path, map_location="cpu")
+    ckpt_p = Path(checkpoint_path)
+    if not ckpt_p.exists():
+        # Try finding final_model.pt or best_model.pt in parent/checkpoints dir
+        alt_candidates = [
+            ckpt_p.parent / "final_model.pt",
+            ckpt_p.parent / "best_model.pt",
+            PROJECT_ROOT / "checkpoints" / "final_model.pt",
+            PROJECT_ROOT / "checkpoints" / "best_model.pt",
+        ]
+        found = False
+        for cand in alt_candidates:
+            if cand.exists():
+                logger.info(f"Specified checkpoint {checkpoint_path} not found. Using detected alternative: {cand}")
+                ckpt_p = cand
+                found = True
+                break
+        if not found:
+            raise FileNotFoundError(f"Cannot find checkpoint at {checkpoint_path} or fallback candidates: {[str(c) for c in alt_candidates]}")
+
+    logger.info(f"Loading checkpoint: {ckpt_p}")
+    ckpt = torch.load(str(ckpt_p), map_location="cpu")
 
     # Extract fine-tuned state dict
     if "state_dict" in ckpt:

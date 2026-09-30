@@ -45,6 +45,7 @@ checkpoints/*
 *.sqlite
 *.sqlite3
 data/public/change_results/
+data/eurosat/
 
 # Generated Indexes and Search State
 indexes/*

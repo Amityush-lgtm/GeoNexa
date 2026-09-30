@@ -224,6 +224,12 @@ class EOFineTuneDataset(Dataset):
         return dist
 
 
+def default_eo_collate_fn(batch):
+    images, captions, metas = zip(*batch)
+    images = torch.stack(images)
+    return images, list(captions), list(metas)
+
+
 def create_dataloaders(
     train_json: str,
     val_json: Optional[str],
@@ -248,18 +254,13 @@ def create_dataloaders(
         augment=True,
     )
 
-    def collate_fn(batch):
-        images, captions, metas = zip(*batch)
-        images = torch.stack(images)
-        return images, list(captions), list(metas)
-
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
         pin_memory=pin_memory,
-        collate_fn=collate_fn,
+        collate_fn=default_eo_collate_fn,
         drop_last=True,
     )
 
@@ -277,7 +278,7 @@ def create_dataloaders(
             shuffle=False,
             num_workers=num_workers,
             pin_memory=pin_memory,
-            collate_fn=collate_fn,
+            collate_fn=default_eo_collate_fn,
         )
 
     return train_loader, val_loader
