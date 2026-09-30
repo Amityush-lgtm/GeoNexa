@@ -1,0 +1,381 @@
+/* ─── GeoNexa Tile Inspector Styles ─── */
+.inspector-page {
+  padding: 1.5rem 2.5rem 3.5rem;
+  max-width: 1440px;
+  margin: 0 auto;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  position: relative;
+}
+
+/* Header */
+.ip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.ip-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  margin-bottom: 0.5rem;
+}
+
+.ip-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 8px #34d399;
+  animation: ipPulse 2s infinite ease-in-out;
+}
+
+@keyframes ipPulse {
+  0%, 100% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.ip-title {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.2vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.ip-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  color: rgba(224, 232, 245, 0.7);
+  max-width: 640px;
+  line-height: 1.45;
+}
+
+.ip-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ip-btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  padding: 0.45rem 0.95rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(12px);
+}
+
+.ip-btn-action:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.ip-btn-primary {
+  background: rgba(17, 105, 220, 0.25);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.ip-btn-primary:hover {
+  background: rgba(17, 105, 220, 0.45);
+}
+
+/* ── Main Stage Grid ── */
+.ip-stage {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 1.75rem;
+  align-items: start;
+}
+
+/* Viewer Frame */
+.ip-viewer-card {
+  background: #02060d;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.65);
+}
+
+.ip-viewer-bar {
+  padding: 0.85rem 1.25rem;
+  background: rgba(6, 15, 28, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(12px);
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.ip-band-tabs {
+  display: flex;
+  gap: 0.35rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ip-band-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ip-band-btn.active {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.ip-canvas-frame {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  overflow: hidden;
+  background: #050a14;
+}
+
+.ip-canvas-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: filter 0.3s ease;
+}
+
+.ip-canvas-frame.mode-rgb img {
+  filter: contrast(1.08) saturate(1.1);
+}
+
+.ip-canvas-frame.mode-cir img {
+  filter: contrast(1.15) hue-rotate(-50deg) saturate(1.4);
+}
+
+.ip-canvas-frame.mode-ndvi img {
+  filter: contrast(1.3) hue-rotate(65deg) saturate(1.6);
+}
+
+.ip-canvas-frame.mode-ndwi img {
+  filter: contrast(1.25) hue-rotate(180deg) saturate(1.5);
+}
+
+.ip-hud {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  right: 14px;
+  background: rgba(4, 9, 17, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  backdrop-filter: blur(14px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Chakra Petch', monospace;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.ip-hud strong {
+  color: #ffffff;
+}
+
+/* ── Info & Spectral Panels ── */
+.ip-info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.ip-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(10, 22, 38, 0.8) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  padding: 1.4rem;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.ip-card-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+}
+
+.ip-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.ip-meta-cell {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+}
+
+.ip-meta-lbl {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.68rem;
+  color: rgba(224, 232, 245, 0.6);
+  text-transform: uppercase;
+}
+
+.ip-meta-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 0.2rem;
+  font-family: 'Chakra Petch', monospace;
+}
+
+/* Spectral profile bars */
+.ip-spectral-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ip-spec-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ip-spec-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-family: 'Chakra Petch', monospace;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.ip-bar-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ip-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+/* ── Chip Selector Presets ── */
+.ip-presets {
+  margin-top: 2.2rem;
+}
+
+.ip-presets-heading {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(224, 232, 245, 0.65);
+  text-transform: uppercase;
+  margin-bottom: 0.85rem;
+}
+
+.ip-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.ip-preset-card {
+  background: rgba(8, 17, 30, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  backdrop-filter: blur(12px);
+}
+
+.ip-preset-card:hover {
+  background: rgba(14, 26, 44, 0.85);
+  border-color: rgba(56, 189, 248, 0.4);
+  transform: translateY(-3px);
+}
+
+.ip-preset-card.active {
+  background: rgba(17, 105, 220, 0.15);
+  border-color: #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+}
+
+.ip-pr-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #ffffff;
+}
+
+.ip-pr-desc {
+  font-size: 0.74rem;
+  color: rgba(224, 232, 245, 0.6);
+  line-height: 1.3;
+}
+
+.ip-pr-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.3rem;
+  font-family: 'Chakra Petch', monospace;
+  font-size: 0.68rem;
+  color: #38bdf8;
+}
+
+@media (max-width: 1024px) {
+  .ip-stage {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .inspector-page {
+    padding: 1rem 1rem 2rem;
+  }
+}

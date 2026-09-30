@@ -1,0 +1,554 @@
+/* ─── Stratum Hero & Archive Ops CSS (GeoNexa Earth Observation) ─── */
+:root {
+  --u: clamp(0.68px, min(100vw / 1280, 100vh / 800), 1.72px);
+  --t: var(--u);
+  --line: rgba(255, 255, 255, 0.13);
+  --cream: #e8d1cb;
+  --ink: #15131b;
+  --hair: max(1px, calc(1 * var(--u)));
+  --nudge: calc(1 * var(--t));
+  --e-mask: cubic-bezier(0.16, 1, 0.3, 1);
+  --e-line: cubic-bezier(0.65, 0, 0.35, 1);
+  --e-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.stratum-stage {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 68px);
+  min-height: 600px;
+  overflow: hidden;
+  background: #04070d;
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+}
+
+/* ── Hero Image & Videos ── */
+.stratum-bg {
+  position: absolute;
+  inset: 0;
+  background-image: url('https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/b5f79c5a-2ebd-41ef-865e-24c660ac98bd.png');
+  background-size: cover;
+  background-position: 50% 50%;
+  background-repeat: no-repeat;
+  will-change: transform;
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+}
+
+.stratum-bg video {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  width: max(100vw, 177.78vh);
+  height: max(100vh, 56.25vw);
+  transform: translate(-45.5%, -50%) scale(1.1);
+  opacity: 0;
+  transition: opacity 0.9s ease;
+}
+
+.stratum-bg video.on {
+  opacity: 1;
+}
+
+/* ── Frame ── */
+.stratum-frame {
+  position: absolute;
+  left: calc(30 * var(--u));
+  top: calc(20 * var(--u));
+  right: calc(30 * var(--u));
+  bottom: calc(25 * var(--u));
+  pointer-events: none;
+}
+
+.stratum-ln {
+  position: absolute;
+  background: var(--line);
+}
+
+.stratum-ln-t {
+  left: calc(26 * var(--u));
+  right: calc(26 * var(--u));
+  top: 0;
+  height: var(--hair);
+}
+
+.stratum-ln-b {
+  left: calc(26 * var(--u));
+  right: calc(26 * var(--u));
+  bottom: 0;
+  height: var(--hair);
+}
+
+.stratum-ln-l {
+  top: calc(26 * var(--u));
+  bottom: calc(26 * var(--u));
+  left: 0;
+  width: var(--hair);
+}
+
+.stratum-ln-r {
+  top: calc(26 * var(--u));
+  bottom: calc(26 * var(--u));
+  right: 0;
+  width: var(--hair);
+}
+
+.stratum-cn {
+  position: absolute;
+  width: calc(26 * var(--u));
+  height: calc(26 * var(--u));
+}
+
+.stratum-cn-tl {
+  left: 0;
+  top: 0;
+  background: linear-gradient(to bottom right, transparent calc(50% - 0.65px), var(--line) calc(50% - 0.65px), var(--line) calc(50% + 0.65px), transparent calc(50% + 0.65px));
+}
+
+.stratum-cn-br {
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom right, transparent calc(50% - 0.65px), var(--line) calc(50% - 0.65px), var(--line) calc(50% + 0.65px), transparent calc(50% + 0.65px));
+}
+
+.stratum-cn-tr {
+  right: 0;
+  top: 0;
+  background: linear-gradient(to bottom left, transparent calc(50% - 0.65px), var(--line) calc(50% - 0.65px), var(--line) calc(50% + 0.65px), transparent calc(50% + 0.65px));
+}
+
+.stratum-cn-bl {
+  left: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom left, transparent calc(50% - 0.65px), var(--line) calc(50% - 0.65px), var(--line) calc(50% + 0.65px), transparent calc(50% + 0.65px));
+}
+
+/* ── Typography & Decode Labels ── */
+.stratum-lbl {
+  font-family: 'Chakra Petch', sans-serif;
+  font-weight: 700;
+  font-size: calc(10 * var(--t));
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.stratum-t {
+  position: relative;
+  top: var(--nudge);
+  display: inline-block;
+  text-align: left;
+  white-space: pre;
+}
+
+/* ── Section Index Rail ── */
+.stratum-index {
+  position: absolute;
+  left: calc(10.5 * var(--t));
+  top: 50%;
+  transform: translateY(calc(-50% + 1.5 * var(--t)));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.stratum-index li {
+  height: calc(27 * var(--t));
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.stratum-index a {
+  font-family: 'Chakra Petch', sans-serif;
+  font-weight: 700;
+  font-size: calc(9.5 * var(--t));
+  line-height: 1;
+  letter-spacing: calc(1.3 * var(--t));
+  text-decoration: none;
+  white-space: nowrap;
+  color: rgba(232, 238, 250, 0.32);
+  transition: color 0.3s ease;
+}
+
+.stratum-index a:hover {
+  color: #e6eaf5;
+}
+
+.stratum-index .on a {
+  color: #ffffff;
+}
+
+.stratum-index .on::before {
+  content: "";
+  position: absolute;
+  left: calc(-13.5 * var(--t));
+  top: 50%;
+  width: calc(6 * var(--t));
+  height: calc(7 * var(--t));
+  transform: translateY(-50%);
+  background: var(--cream);
+  box-shadow: 0 0 calc(8 * var(--t)) rgba(232, 209, 203, 0.6);
+}
+
+/* ── Hero Center Column: Anchored lower to showcase the video animation ── */
+.stratum-hero {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(6.5%, calc(54 * var(--t)));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  pointer-events: none;
+  max-width: calc(780 * var(--t));
+  margin: 0 auto;
+  padding: 0 calc(20 * var(--t));
+  box-sizing: border-box;
+  z-index: 5;
+}
+
+.stratum-chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(7 * var(--t));
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: calc(8.5 * var(--t));
+  font-weight: 700;
+  letter-spacing: calc(1.4 * var(--t));
+  color: var(--cream);
+  margin-bottom: calc(8 * var(--t));
+  background: rgba(232, 209, 203, 0.09);
+  border: 1px solid rgba(232, 209, 203, 0.22);
+  padding: calc(3.5 * var(--t)) calc(12 * var(--t));
+  border-radius: 999px;
+  pointer-events: auto;
+  backdrop-filter: blur(calc(8 * var(--t)));
+}
+
+.stratum-tag-dot {
+  width: calc(6 * var(--t));
+  height: calc(6 * var(--t));
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 calc(8 * var(--t)) #34d399;
+  animation: stratum-pulse 2s infinite ease-in-out;
+}
+
+@keyframes stratum-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.stratum-headline {
+  margin: 0;
+  font-weight: 700;
+  font-size: calc(26 * var(--t));
+  line-height: calc(27 * var(--t));
+  letter-spacing: calc(1.3 * var(--t));
+  color: #ffffff;
+  text-transform: uppercase;
+  text-shadow: 0 calc(2 * var(--t)) calc(12 * var(--t)) rgba(0, 0, 0, 0.7);
+}
+
+.stratum-headline .hrow {
+  display: block;
+  overflow: hidden;
+}
+
+.stratum-headline .hrise {
+  display: block;
+  transition: transform 0.45s var(--e-mask);
+}
+
+.stratum-blurb {
+  margin: calc(8 * var(--t)) 0 0;
+  font-weight: 400;
+  font-size: calc(10.5 * var(--t));
+  line-height: calc(16.5 * var(--t));
+  color: rgba(224, 232, 245, 0.82);
+  max-width: calc(560 * var(--t));
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.swapping .hrise {
+  transform: translateY(112%);
+}
+
+.swapping .stratum-blurb {
+  opacity: 0;
+  transform: translateY(calc(7 * var(--t)));
+}
+
+/* ── Live On-Page Operational Metrics Grid (Bigger & Prominent Stats) ── */
+.stratum-specs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(12 * var(--t));
+  width: 100%;
+  max-width: calc(740 * var(--t));
+  margin-top: calc(16 * var(--t));
+  pointer-events: auto;
+}
+
+.stratum-spec-card {
+  background: rgba(6, 12, 22, 0.78);
+  backdrop-filter: blur(calc(18 * var(--t)));
+  -webkit-backdrop-filter: blur(calc(18 * var(--t)));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: calc(12 * var(--t)) calc(14 * var(--t));
+  border-radius: calc(6 * var(--t));
+  text-align: left;
+  position: relative;
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 calc(10 * var(--t)) calc(28 * var(--t)) rgba(0, 0, 0, 0.65);
+}
+
+.stratum-spec-card:hover {
+  background: rgba(14, 24, 40, 0.92);
+  border-color: rgba(232, 209, 203, 0.5);
+  transform: translateY(calc(-3 * var(--t)));
+  box-shadow: 0 calc(14 * var(--t)) calc(36 * var(--t)) rgba(0, 0, 0, 0.8);
+}
+
+.stratum-spec-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(20 * var(--t));
+  height: 2.5px;
+  background: var(--cream);
+  border-radius: 2px;
+}
+
+.stratum-spec-label {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: calc(8.5 * var(--t));
+  font-weight: 700;
+  letter-spacing: calc(1 * var(--t));
+  color: var(--cream);
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.stratum-spec-val {
+  font-family: 'Chakra Petch', 'Inter', sans-serif;
+  font-size: calc(16 * var(--t));
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: calc(4 * var(--t));
+  letter-spacing: calc(0.3 * var(--t));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 0 calc(12 * var(--t)) rgba(255, 255, 255, 0.25);
+}
+
+.stratum-spec-detail {
+  font-size: calc(9.5 * var(--t));
+  font-weight: 500;
+  color: rgba(200, 215, 240, 0.75);
+  margin-top: calc(3 * var(--t));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Real-Time Status Pill ── */
+.stratum-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8 * var(--t));
+  margin-top: calc(12 * var(--t));
+  background: rgba(4, 9, 17, 0.7);
+  backdrop-filter: blur(calc(14 * var(--t)));
+  -webkit-backdrop-filter: blur(calc(14 * var(--t)));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: calc(5 * var(--t)) calc(16 * var(--t));
+  border-radius: 999px;
+  pointer-events: auto;
+}
+
+.stratum-pulse-dot {
+  width: calc(7 * var(--t));
+  height: calc(7 * var(--t));
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 calc(10 * var(--t)) #38bdf8;
+  animation: stratum-pulse 1.8s infinite ease-in-out;
+}
+
+.stratum-status-text {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: calc(9.5 * var(--t));
+  font-weight: 600;
+  letter-spacing: calc(0.6 * var(--t));
+  color: rgba(232, 238, 250, 0.85);
+}
+
+.stratum-status-text strong {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+/* ── Bottom Dock ── */
+.stratum-dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(47 * var(--t));
+  --nudge: calc(1.6 * var(--t));
+  pointer-events: auto;
+}
+
+.stratum-dock .rule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--hair);
+  background: var(--line);
+}
+
+.stratum-dock .div {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--hair);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.stratum-dock .div-l {
+  left: calc(135 * var(--t));
+}
+
+.stratum-dock .div-r {
+  right: calc(230 * var(--t));
+}
+
+.stratum-dock a,
+.stratum-dock button,
+.stratum-dock div {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.75);
+  transition: color 0.3s ease;
+}
+
+.stratum-dock button {
+  cursor: pointer;
+}
+
+.stratum-dock button:hover {
+  color: #ffffff;
+}
+
+.stratum-audio {
+  position: absolute;
+  left: calc(26 * var(--t));
+  top: 0;
+  bottom: 0;
+}
+
+.stratum-audio .ico {
+  width: calc(14 * var(--t));
+  height: calc(11 * var(--t));
+  flex: none;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.stratum-audio .wave {
+  transition: opacity 0.25s ease;
+}
+
+.stratum-audio.muted .wave {
+  opacity: 0;
+}
+
+.stratum-audio .slash {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.stratum-audio.muted .slash {
+  opacity: 1;
+}
+
+.stratum-audio span {
+  margin-left: calc(10 * var(--t));
+  letter-spacing: calc(0.02 * var(--t));
+}
+
+.stratum-scroll {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0;
+  bottom: 0;
+  font-family: 'Chakra Petch', sans-serif;
+  letter-spacing: calc(0.8 * var(--t));
+  font-size: calc(9 * var(--t));
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.stratum-talk {
+  position: absolute;
+  right: calc(24 * var(--t));
+  top: 0;
+  bottom: 0;
+  font-family: 'Chakra Petch', sans-serif;
+  letter-spacing: calc(0.5 * var(--t));
+  font-size: calc(9 * var(--t));
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.stratum-talk .ico {
+  width: calc(14 * var(--t));
+  height: calc(13 * var(--t));
+  margin-left: calc(9 * var(--t));
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+
+/* ── Responsive adjustments ── */
+@media (max-width: 1100px) {
+  .stratum-dock .div {
+    display: none;
+  }
+  .stratum-scroll {
+    display: none;
+  }
+  .stratum-specs-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .stratum-index {
+    display: none;
+  }
+  .stratum-hero {
+    max-width: 90%;
+  }
+  .stratum-specs-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: calc(8 * var(--t));
+  }
+}
