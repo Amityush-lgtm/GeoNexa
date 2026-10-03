@@ -4393,7 +4393,7 @@ cam.far=3000;
 function frame(){
  const t=clock.getElapsedTime(),dt=Math.min(.1,t-lastT);lastT=t;cur+=(target-cur)*(reduce?1:.06);const p=cur;
  const st=p>.72;
- if(st!==stage){stage=st;earthObjs.forEach(o=>o.visible=!st);nat.visible=st;scene.fog=st?fog:null;}
+ if(st!==stage){stage=st;earthObjs.forEach(o=>o.visible=!st);nat.visible=false;scene.fog=null;}
  if(!stage){
   const a=S(0,.5,p),th=L(-.75,.9,a),el=L(.3,.18,a);
   dir.set(Math.sin(th)*Math.cos(el),Math.sin(el),Math.cos(th)*Math.cos(el));
@@ -4416,14 +4416,15 @@ function frame(){
  haze.style.opacity=S(.62,.71,p)*(1-S(.73,.79,p));
  const forestEl=document.getElementById('realisticForest');
  if(forestEl){
-  const fo=S(.76,.88,p);
+  const fo=S(.62,.80,p);
   forestEl.style.opacity=String(fo);
-  forestEl.style.transform='scale('+(1.06-.06*S(.76,1,p))+')';
+  forestEl.style.transform='scale('+(1.06-.06*S(.62,1,p))+')';
  }
- // Hide the 3D WebGL canvas once real forest is opaque - prevents fake 3D nature showing through
+ // Fade the 3D WebGL canvas out as we approach the ground
+ // Canvas disappears by p=0.78 - well before any 3D nature could show
  const cv3d=document.getElementById('c');
  if(cv3d){
-  const canvasOpacity = 1 - S(.82,.92,p);
+  const canvasOpacity = 1 - S(.65,.78,p);
   cv3d.style.opacity=String(canvasOpacity);
  }
  els.forEach((e,i)=>{const T=TXT[i],o=S(T[4],T[5],p)*(1-S(T[6],T[7],p));e.style.opacity=o;e.style.transform='translateY('+((1-o)*22)+'px)';e.style.pointerEvents=(T[8]&&o>.5)?'auto':'none';});
