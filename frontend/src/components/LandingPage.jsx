@@ -41,13 +41,14 @@ export default function LandingPage({ onEnter }) {
       }
     };
 
-    // Script is loaded once; just re-init the scene each visit
-    const existingScript = document.querySelector('script[src="/terra-engine.js"]');
+    // Script is loaded; re-init the scene each visit
+    const existingScript = document.querySelector('script[data-terra-engine="true"]');
     if (existingScript && typeof window.initTerraEngine === 'function') {
       initEngine();
     } else if (!existingScript) {
       const script = document.createElement('script');
-      script.src = '/terra-engine.js';
+      script.src = '/terra-engine.js?v=' + Date.now();
+      script.setAttribute('data-terra-engine', 'true');
       script.async = true;
       script.onload = initEngine;
       script.onerror = (e) => console.error('Failed to load terra-engine.js', e);
@@ -106,14 +107,6 @@ export default function LandingPage({ onEnter }) {
           alt="Photorealistic Living Forest Canopy"
           className="terra-forest-img"
         />
-        <video
-          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260613_180732_a54afbf6-b30d-470e-861f-669871f09f67.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="terra-forest-video"
-        ></video>
         <div className="terra-forest-overlay"></div>
       </div>
 
