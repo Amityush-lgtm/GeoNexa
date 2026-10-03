@@ -4414,6 +4414,12 @@ function frame(){
  }
  cam.updateProjectionMatrix();
  haze.style.opacity=S(.62,.71,p)*(1-S(.73,.79,p));
+ const forestEl=document.getElementById('realisticForest');
+ if(forestEl){
+  const fo=S(.73,.82,p);
+  forestEl.style.opacity=fo;
+  forestEl.style.transform='scale('+(1.08-.08*S(.73,1,p))+')';
+ }
  els.forEach((e,i)=>{const T=TXT[i],o=S(T[4],T[5],p)*(1-S(T[6],T[7],p));e.style.opacity=o;e.style.transform='translateY('+((1-o)*22)+'px)';e.style.pointerEvents=(T[8]&&o>.5)?'auto':'none';});
  hint.style.opacity=1-S(0,.03,p);bar.style.width=(p*100)+'%';
  renderer.render(scene,cam);

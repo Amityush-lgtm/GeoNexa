@@ -85,6 +85,24 @@ export default function LandingPage({ onEnter }) {
       <div id="haze"></div>
       <div id="flashx"></div>
 
+      {/* Real-World Photorealistic Living Forest Layer (Fades in at ground descent) */}
+      <div id="realisticForest" className="terra-realistic-forest">
+        <img
+          src="/realistic-forest.jpg"
+          alt="Photorealistic Living Forest Canopy"
+          className="terra-forest-img"
+        />
+        <video
+          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260613_180732_a54afbf6-b30d-470e-861f-669871f09f67.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="terra-forest-video"
+        ></video>
+        <div className="terra-forest-overlay"></div>
+      </div>
+
       {/* Top Navbar */}
       <nav className="terra-nav">
         <div
