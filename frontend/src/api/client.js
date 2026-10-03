@@ -66,9 +66,30 @@ export async function getProvenanceRecord(provenanceId) {
   return res.json();
 }
 
+export async function listRecentProvenance(limit = 20) {
+  const res = await fetch(`${BASE_URL}/provenance?limit=${limit}`);
+  if (!res.ok) throw new Error(`Failed to list provenance records: ${res.statusText}`);
+  return res.json();
+}
+
 export async function getArchiveStats() {
   const res = await fetch(`${BASE_URL}/archive/stats`);
   if (!res.ok) throw new Error(`Failed to load archive stats: ${res.statusText}`);
+  return res.json();
+}
+
+export async function listArchiveTiles(sceneId = null, limit = 60) {
+  const url = sceneId 
+    ? `${BASE_URL}/archive/tiles?scene_id=${encodeURIComponent(sceneId)}&limit=${limit}`
+    : `${BASE_URL}/archive/tiles?limit=${limit}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to list tiles: ${res.statusText}`);
+  return res.json();
+}
+
+export async function listScenes() {
+  const res = await fetch(`${BASE_URL}/archive/scenes`);
+  if (!res.ok) throw new Error(`Failed to list scenes: ${res.statusText}`);
   return res.json();
 }
 

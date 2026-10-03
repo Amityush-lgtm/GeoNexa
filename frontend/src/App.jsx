@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import LandingPage from './components/LandingPage';
 import Navbar from './components/Navbar';
+import OverviewPage from './components/OverviewPage';
 import SearchPage from './components/SearchPage';
 import InvestigationPage from './components/InvestigationPage';
 import ChangePage from './components/ChangePage';
@@ -13,11 +14,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('search');
 
   // Page-level state
-  const [selectedTileId, setSelectedTileId]           = useState(null);
-  const [changeT1, setChangeT1]                       = useState(null);
-  const [changeT2, setChangeT2]                       = useState(null);
-  const [similarQueryTileId, setSimilarQueryTileId]   = useState(null);
+  const [selectedTileId, setSelectedTileId] = useState(null);
+  const [changeT1, setChangeT1] = useState(null);
+  const [changeT2, setChangeT2] = useState(null);
+  const [similarQueryTileId, setSimilarQueryTileId] = useState(null);
   const [selectedProvenanceId, setSelectedProvenanceId] = useState(null);
+  const [searchInitialQuery, setSearchInitialQuery] = useState(null);
 
   const handleEnterPlatform = (tab) => {
     setShowLanding(false);
@@ -53,6 +55,11 @@ export default function App() {
     setActiveTab('provenance');
   };
 
+  const handleTriggerSearchFromOverview = (queryText) => {
+    setSearchInitialQuery(queryText);
+    setActiveTab('search');
+  };
+
   if (showLanding) {
     return <LandingPage onEnter={handleEnterPlatform} />;
   }
@@ -66,8 +73,18 @@ export default function App() {
       />
 
       <main style={{ flex: 1, paddingBottom: '3rem' }}>
+        {activeTab === 'overview' && (
+          <OverviewPage
+            setActiveTab={setActiveTab}
+            onSelectSearchQuery={handleTriggerSearchFromOverview}
+            onSelectTile={handleSelectTile}
+            onSelectChangePair={handleSelectChangePair}
+          />
+        )}
+
         {activeTab === 'search' && (
           <SearchPage
+            initialQuery={searchInitialQuery}
             onSelectTile={handleSelectTile}
             onSelectChangePair={handleSelectChangePair}
             onSelectProvenance={handleSelectProvenance}

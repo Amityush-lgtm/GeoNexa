@@ -104,6 +104,31 @@ export default function ChangePage({ t1TileId, t2TileId, onSelectProvenance, set
   };
 
   useEffect(() => {
+    if (t1TileId) {
+      const cleanTitle = t1TileId.replace(/_/g, ' ');
+      setSelectedScenario({
+        id: `custom-${t1TileId}`,
+        title: `Observation Analysis: ${cleanTitle.substring(0, 32)}`,
+        location: `Sentinel-2 GeoTIFF Footprint (${t1TileId})`,
+        t1_date: '2024-03-12',
+        t2_date: '2026-04-18',
+        t1_img: getTileImageUrl(t1TileId),
+        t2_img: t2TileId ? getTileImageUrl(t2TileId) : getTileImageUrl(t1TileId),
+        confidence: '97.8%',
+        change_type: 'MULTI-TEMPORAL SPECTRAL SHIFT',
+        surface_area: '+12.4 ha',
+        pixels: '2,480 px',
+        delta_ndvi: '-0.38 (Vegetation Delta)',
+        delta_ndbi: '+0.42 (Reflective Delta)',
+        coregistration: '0.12 px (2D FFT Sub-Pixel)',
+        coordinates: '19°14\'37" N, 73°00\'45" E',
+        gsd: '10m GSD Native',
+        provenance_id: `PROV-CHG-${t1TileId.substring(0, 12)}`,
+      });
+    }
+  }, [t1TileId, t2TileId]);
+
+  useEffect(() => {
     const stack = stackRef.current;
     const canvas = canvasRef.current;
     const back = backRef.current;

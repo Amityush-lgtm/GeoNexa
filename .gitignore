@@ -51,9 +51,11 @@ data/eurosat/
 indexes/*
 !indexes/.gitkeep
 
-# Training Data Cache
-training_data/*
-!training_data/.gitkeep
+# Research artifacts (training data, reports, etc.)
+research/training_data/*
+!research/training_data/.gitkeep
+research/reports/*
+!research/reports/.gitkeep
 
 # Testing & Coverage
 .pytest_cache/
@@ -67,10 +69,6 @@ htmlcov/
 *.swo
 Thumbs.db
 .DS_Store
-
-# Reports
-reports/*
-!reports/.gitkeep
 
 # Logs
 *.log

@@ -91,6 +91,35 @@ async def get_stats():
     )
 
 
+@router.get("/tiles")
+async def list_tiles(scene_id: str = None, limit: int = 60):
+    """List indexed tiles with metadata."""
+    if scene_id:
+        rows = execute_query(
+            """
+            SELECT t.*, s.sensor, s.acquisition_date
+            FROM tiles t
+            JOIN scenes s ON t.scene_id = s.scene_id
+            WHERE t.scene_id = ?
+            ORDER BY t.tile_id ASC
+            LIMIT ?
+            """,
+            (scene_id, limit),
+        )
+    else:
+        rows = execute_query(
+            """
+            SELECT t.*, s.sensor, s.acquisition_date
+            FROM tiles t
+            JOIN scenes s ON t.scene_id = s.scene_id
+            ORDER BY t.tile_id ASC
+            LIMIT ?
+            """,
+            (limit,),
+        )
+    return {"tiles": rows, "total": len(rows)}
+
+
 @router.get("/tiles/{tile_id}")
 async def get_tile(tile_id: str):
     """Get tile metadata."""

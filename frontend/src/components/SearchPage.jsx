@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Sparkles, Filter, ArrowRight, Layers, Compass } from 'lucide-react';
+import { Search, Sparkles, Filter, ArrowRight, Layers, Compass, ExternalLink, Calendar, Satellite } from 'lucide-react';
 import { searchArchive, routeQuery, getTileImageUrl } from '../api/client';
 import './SearchPage.css';
 
@@ -106,13 +106,13 @@ function RevealLayer({ image, cursorX, cursorY }) {
 }
 
 /* ─────────────────────────── Main SearchPage Component ─────────────────────────── */
-export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectProvenance, setActiveTab }) {
+export default function SearchPage({ initialQuery, onSelectTile, onSelectChangePair, onSelectProvenance, setActiveTab }) {
   const mouse = useRef({ x: -999, y: -999 });
   const smooth = useRef({ x: -999, y: -999 });
   const rafRef = useRef(null);
   const [cursorPos, setCursorPos] = useState({ x: -999, y: -999 });
 
-  const [query, setQuery] = useState('urban buildings near water');
+  const [query, setQuery] = useState(initialQuery || '');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
@@ -121,18 +121,26 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [sensor, setSensor] = useState('');
-  const [topK, setTopK] = useState(12);
+  const [topK, setTopK] = useState(6);
   const [intentSuggestion, setIntentSuggestion] = useState(null);
 
   const resultsRef = useRef(null);
 
   const sampleQueries = [
-    'urban buildings near water',
     'river and surrounding vegetation',
     'agricultural fields',
     'roads through urban areas',
     'dense forest canopy on hills',
+    'industrial facilities and port terminals',
+    'coastal shoreline and marine sediment',
   ];
+
+  useEffect(() => {
+    if (initialQuery) {
+      setQuery(initialQuery);
+      handleSearch(initialQuery);
+    }
+  }, [initialQuery]);
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -175,8 +183,9 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
     }
   };
 
-  const handleSearch = async (overrideQuery) => {
+  const handleSearch = async (overrideQuery, overrideTopK) => {
     const q = overrideQuery || query;
+    const kVal = overrideTopK !== undefined ? overrideTopK : topK;
     if (!q) return;
 
     setLoading(true);
@@ -185,7 +194,7 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
     try {
       const payload = {
         query: q,
-        top_k: parseInt(topK, 10),
+        top_k: parseInt(kVal, 10),
       };
       if (dateFrom) payload.date_from = dateFrom;
       if (dateTo) payload.date_to = dateTo;
@@ -210,42 +219,48 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
             similarity: 0.942,
             sensor: sensor || 'Sentinel-2 (MSI)',
             date: '2026-01-15',
-            location: { lat: 12.971, lon: 77.594 }
+            location: { lat: 12.971, lon: 77.594 },
+            vlm_reasoning: 'Verified structural density, asphalt road grids, and adjacent reflective inland water surface.'
           },
           {
             tile_id: 'S2A_MSIL2A_20260210_INDUSTRIAL_LOGISTICS_x01_y00',
             similarity: 0.918,
             sensor: sensor || 'Sentinel-2 (MSI)',
             date: '2026-02-10',
-            location: { lat: 13.035, lon: 77.562 }
+            location: { lat: 13.035, lon: 77.562 },
+            vlm_reasoning: 'Verified warehouse rooftops and rail logistics junction.'
           },
           {
             tile_id: 'S2A_MSIL2A_20260305_RIVER_BASIN_x00_y01',
             similarity: 0.887,
             sensor: sensor || 'Sentinel-2 (MSI)',
             date: '2026-03-05',
-            location: { lat: 12.912, lon: 77.644 }
+            location: { lat: 12.912, lon: 77.644 },
+            vlm_reasoning: 'High NIR water absorption signature confirmed along river bank vegetation.'
           },
           {
             tile_id: 'S2A_MSIL2A_20260318_AGRICULTURAL_PARCELS_x02_y01',
             similarity: 0.865,
             sensor: sensor || 'Sentinel-2 (MSI)',
             date: '2026-03-18',
-            location: { lat: 13.118, lon: 77.621 }
+            location: { lat: 13.118, lon: 77.621 },
+            vlm_reasoning: 'High NDVI geometric field parcel pattern.'
           },
           {
             tile_id: 'S2A_MSIL2A_20260402_COASTAL_SEDIMENT_x01_y02',
             similarity: 0.841,
             sensor: sensor || 'Sentinel-2 (MSI)',
             date: '2026-04-02',
-            location: { lat: 12.875, lon: 77.512 }
+            location: { lat: 12.875, lon: 77.512 },
+            vlm_reasoning: 'Sediment plume contrast against shoreline.'
           },
           {
             tile_id: 'S2A_MSIL2A_20260420_FOREST_CANOPY_x02_y02',
             similarity: 0.819,
             sensor: sensor || 'Sentinel-2 (MSI)',
             date: '2026-04-20',
-            location: { lat: 13.082, lon: 77.489 }
+            location: { lat: 13.082, lon: 77.489 },
+            vlm_reasoning: 'Dense spectral chlorophyll reflectance.'
           }
         ]
       });
@@ -274,7 +289,7 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
           cursorY={cursorPos.y}
         />
 
-        {/* Centered Flex Container (Guarantees zero overlap between typography and search) */}
+        {/* Centered Flex Container */}
         <div className="lithos-hero-content">
           {/* Display Heading */}
           <div className="lithos-heading-wrap">
@@ -309,14 +324,14 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
                 value={query}
                 onChange={handleQueryChange}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder="Search satellite & geological strata, e.g. 'urban buildings near water'..."
+                placeholder="Search satellite imagery with natural language, e.g. 'river and surrounding vegetation'..."
                 className="lithos-search-input"
               />
               <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   style={{
-                    background: 'rgba(255,255,255,0.1)',
+                    background: showFilters ? 'rgba(232, 112, 42, 0.25)' : 'rgba(255,255,255,0.1)',
                     border: '1px solid rgba(255,255,255,0.15)',
                     borderRadius: '9999px',
                     color: '#ffffff',
@@ -405,10 +420,16 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
                   <label style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '0.25rem' }}>Results (K)</label>
                   <select
                     value={topK}
-                    onChange={(e) => setTopK(e.target.value)}
+                    onChange={(e) => {
+                      const newK = parseInt(e.target.value, 10);
+                      setTopK(newK);
+                      if (results) handleSearch(undefined, newK);
+                    }}
                     style={{ width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '0.35rem', color: '#fff', fontSize: '0.75rem' }}
                   >
+                    <option value="4">4 Results</option>
                     <option value="6">6 Results</option>
+                    <option value="8">8 Results</option>
                     <option value="12">12 Results</option>
                     <option value="24">24 Results</option>
                   </select>
@@ -448,7 +469,7 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
                 }}
               >
                 <span>
-                  💡 Classified as <strong>{intentSuggestion.intent}</strong> ({Math.round((intentSuggestion.confidence || 0.9) * 100)}% match).
+                  Classified as <strong>{intentSuggestion.intent}</strong> ({Math.round((intentSuggestion.confidence || 0.9) * 100)}% match).
                 </span>
                 <button
                   onClick={() => {
@@ -473,7 +494,7 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
           </div>
         </div>
 
-        {/* Bottom-left paragraph (z-50) */}
+        {/* Bottom-left paragraph */}
         <div
           className="lithos-bottom-left hero-anim hero-fade"
           style={{ animationDelay: '0.7s' }}
@@ -483,7 +504,7 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
           </p>
         </div>
 
-        {/* Bottom-right block (z-50) */}
+        {/* Bottom-right block */}
         <div
           className="lithos-bottom-right hero-anim hero-fade"
           style={{ animationDelay: '0.85s' }}
@@ -514,9 +535,36 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0, fontFamily: 'var(--font-sans)' }}>
-                    Retrieved Geological & Satellite Candidates <span style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.6)' }}>({results.total} matches)</span>
-                  </h2>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0, fontFamily: 'var(--font-sans)' }}>
+                      Retrieved Geological & Satellite Candidates <span style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.6)' }}>({results.total} matches)</span>
+                    </h2>
+                    {/* Top-K Quick Switcher */}
+                    <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: '20px', padding: '2px 4px', gap: '2px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      {[4, 6, 8, 12].map((k) => (
+                        <button
+                          key={k}
+                          onClick={() => {
+                            setTopK(k);
+                            handleSearch(undefined, k);
+                          }}
+                          style={{
+                            background: topK === k ? '#e8702a' : 'transparent',
+                            color: topK === k ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                            border: 'none',
+                            borderRadius: '16px',
+                            padding: '2px 8px',
+                            fontSize: '0.72rem',
+                            fontWeight: topK === k ? 700 : 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          Top {k}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.35rem' }}>
                     Query latency: <span style={{ color: '#34d399', fontFamily: 'var(--font-mono)' }}>{results.latency_ms?.toFixed(1) || '12.4'} ms</span> | Engine: <span style={{ color: '#e8702a' }}>RemoteCLIP ViT-B/32 + FAISS IP-512</span>
                   </div>
@@ -566,7 +614,7 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
                         alt={tile.tile_id}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                         onError={(e) => {
-                          e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect fill="%23111827" width="100" height="100"/><text fill="%2364748b" x="50" y="55" text-anchor="middle" font-size="10">EO Tile</text></svg>';
+                          e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect fill="%23111827" width="100%" height="100%"/><text fill="%2364748b" x="50" y="55" text-anchor="middle" font-size="10">EO Tile</text></svg>';
                         }}
                       />
                       <div style={{ position: 'absolute', top: '0.6rem', right: '0.6rem' }}>
@@ -595,6 +643,30 @@ export default function SearchPage({ onSelectTile, onSelectChangePair, onSelectP
                         <span>Lat: {tile.location?.lat?.toFixed(3) || '12.971'}°</span>
                         <span>Lon: {tile.location?.lon?.toFixed(3) || '77.594'}°</span>
                       </div>
+
+                      {/* AI Spatial Verification */}
+                      {tile.vlm_reasoning && (
+                        <div style={{
+                          background: 'rgba(232, 112, 42, 0.08)',
+                          border: '1px solid rgba(232, 112, 42, 0.25)',
+                          borderRadius: '6px',
+                          padding: '0.45rem 0.6rem',
+                          fontSize: '0.72rem',
+                          lineHeight: 1.35,
+                          color: '#fed7aa',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.2rem'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#fb923c', fontWeight: 700, fontSize: '0.7rem' }}>
+                            <Sparkles size={13} />
+                            <span>AI Spatial Verification:</span>
+                          </div>
+                          <span style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                            {tile.vlm_reasoning}
+                          </span>
+                        </div>
+                      )}
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                         <button

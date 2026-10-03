@@ -40,6 +40,8 @@ class SearchResult(BaseModel):
     raw_similarity: Optional[float] = None
     confidence: Optional[float] = None
     match_percentage: Optional[float] = None
+    vlm_reasoning: Optional[str] = None
+    is_strongly_aligned: Optional[bool] = None
     image_url: str
     location: dict  # {"lat": ..., "lon": ...}
     bbox: list[float]
