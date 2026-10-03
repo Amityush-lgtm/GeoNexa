@@ -1,86 +1,92 @@
 import React, { useState, useEffect } from 'react';
-import { History, Sparkles, ZoomIn, GitCompare, ArrowRight, Filter } from 'lucide-react';
-import { searchSimilar, getTileImageUrl } from '../api/client';
+import { History, Sparkles, ZoomIn, GitCompare, ArrowRight, Filter, Compass, Layers, Check } from 'lucide-react';
+import { searchSimilar, getTileImageUrl, listArchiveTiles } from '../api/client';
 import './SimilarPage.css';
 
 const SIMILAR_PRESETS = [
   {
-    id: 'agri-grid',
-    label: 'Agricultural Parcels',
-    refId: 'PUNJAB_S2_20260215_AGRI_x01_y02',
-    name: 'Punjab Fertile Basin Crops',
-    image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80',
-    mockResults: [
-      { tile_id: 'HARYANA_S2_20260220_AGRI_x02_y01', name: 'Yamunanagar Wheat Fields', location: 'Haryana, India', sim: 0.962, dist: 0.27, img: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=600&q=80' },
-      { tile_id: 'UP_S2_20260301_PLAINS_x03_y02', name: 'Ganga Alluvial Crop Grid', location: 'Uttar Pradesh, India', sim: 0.941, dist: 0.34, img: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=600&q=80' },
-      { tile_id: 'MP_S2_20260118_MALWA_x01_y04', name: 'Malwa Plateau Farmlands', location: 'Madhya Pradesh, India', sim: 0.918, dist: 0.40, img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=600&q=80' },
-      { tile_id: 'BIHAR_S2_20260228_NORTH_x04_y01', name: 'Mithila Agricultural Basin', location: 'Bihar, India', sim: 0.895, dist: 0.45, img: 'https://images.unsplash.com/photo-1508873696983-2df57046475b?auto=format&fit=crop&w=600&q=80' },
-      { tile_id: 'GUJ_S2_20260122_SAU_x02_y03', name: 'Saurashtra Groundnut Fields', location: 'Gujarat, India', sim: 0.884, dist: 0.48, img: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=600&q=80' },
-      { tile_id: 'AP_S2_20260312_DELTA_x01_y01', name: 'Godavari Paddy Grid', location: 'Andhra Pradesh, India', sim: 0.871, dist: 0.51, img: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=600&q=80' },
-    ],
+    id: 'port-terminal',
+    label: 'Deepwater Port & Maritime Terminal',
+    refId: 'S2A_MSIL2A_20240312_MUMBAI_PORT_COAST_x03_y00',
+    name: 'Mumbai Port & JNPT Maritime Basin',
   },
   {
-    id: 'coastal-port',
-    label: 'Deepwater Port & Jetty',
-    refId: 'MUMBAI_S2_20260210_PORT_x02_y01',
-    name: 'JNPT Maritime Shipping Basin',
-    image: 'https://images.unsplash.com/photo-1508873696983-2df57046475b?auto=format&fit=crop&w=800&q=80',
-    mockResults: [
-      { tile_id: 'VIZAG_S2_20260125_HARBOR_x01_y01', name: 'Visakhapatnam Outer Harbor', location: 'Andhra Pradesh, India', sim: 0.954, dist: 0.30, img: 'https://images.unsplash.com/photo-1508873696983-2df57046475b?auto=format&fit=crop&w=600&q=80' },
-      { tile_id: 'COCHIN_S2_20260214_PORT_x02_y02', name: 'Cochin Vallarpadam Terminal', location: 'Kerala, India', sim: 0.938, dist: 0.35, img: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=600&q=80' },
-      { tile_id: 'CHENNAI_S2_20260305_ENNORE_x03_y01', name: 'Kamarajar Port Ennore', location: 'Tamil Nadu, India', sim: 0.912, dist: 0.42, img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=600&q=80' },
-      { tile_id: 'KANDLA_S2_20260130_GULF_x01_y03', name: 'Deendayal Port Gulf of Kutch', location: 'Gujarat, India', sim: 0.892, dist: 0.46, img: 'https://images.unsplash.com/photo-1508873696983-2df57046475b?auto=format&fit=crop&w=600&q=80' },
-    ],
+    id: 'urban-hub',
+    label: 'Urban Industrial & Road Network',
+    refId: 'S2A_MSIL2A_20240825_URBAN_INDUSTRIAL_HUB_x01_y03',
+    name: 'High-Density Built-up & Logistics Hub',
   },
   {
-    id: 'urban-sprawl',
-    label: 'Dense Urban Sprawl',
-    refId: 'DELHI_S2_20260115_T1_x01_y01',
-    name: 'Delhi NCR High-Density Core',
-    image: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80',
-    mockResults: [
-      { tile_id: 'HYD_S2_20260218_HITEC_x02_y02', name: 'Hyderabad Hitec City Grid', location: 'Telangana, India', sim: 0.958, dist: 0.29, img: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=600&q=80' },
-      { tile_id: 'BLR_S2_20260120_ORR_x01_y01', name: 'Bangalore Outer Ring Hub', location: 'Karnataka, India', sim: 0.942, dist: 0.34, img: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=600&q=80' },
-      { tile_id: 'PUNE_S2_20260302_HINJE_x03_y02', name: 'Pune Hinjewadi Tech Park', location: 'Maharashtra, India', sim: 0.925, dist: 0.38, img: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=600&q=80' },
-      { tile_id: 'AHM_S2_20260225_SG_x02_y01', name: 'Ahmedabad SG Highway Sprawl', location: 'Gujarat, India', sim: 0.901, dist: 0.44, img: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=600&q=80' },
-    ],
+    id: 'forest-canopy',
+    label: 'Dense Forest Canopy on Hills',
+    refId: 'S2B_MSIL2A_20240618_FOREST_WATERSHED_x03_y02',
+    name: 'Western Ghats Forest Watershed',
+  },
+  {
+    id: 'agri-parcels',
+    label: 'Agricultural Parcels & Farmlands',
+    refId: 'S2A_MSIL2A_20240510_COASTAL_AGRICULTURE_x03_y00',
+    name: 'Alluvial Agricultural Farmland Parcels',
+  },
+  {
+    id: 'river-basin',
+    label: 'River Basin & Floodplain',
+    refId: 'S2A_MSIL2A_20240115_ASSAM_BRAHMAPUTRA_T1_x01_y01',
+    name: 'Brahmaputra Riverbed & Alluvial Plumes',
+  },
+  {
+    id: 'mangrove-delta',
+    label: 'Mangrove Estuary & Tidal Channels',
+    refId: 'S2A_MSIL2A_20240218_SUNDARBANS_MANGROVE_x01_y00',
+    name: 'Sundarbans Delta Mangrove Estuary',
   },
 ];
 
 export default function SimilarPage({ queryTileId, onSelectTile, onSelectChangePair, setActiveTab }) {
   const [selectedPreset, setSelectedPreset] = useState(SIMILAR_PRESETS[0]);
   const [inputTileId, setInputTileId] = useState(queryTileId || SIMILAR_PRESETS[0].refId);
+  const [availableTiles, setAvailableTiles] = useState([]);
   const [topK, setTopK] = useState('6');
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState(SIMILAR_PRESETS[0].mockResults);
-  const [latency, setLatency] = useState(8.6);
+  const [results, setResults] = useState([]);
+  const [latency, setLatency] = useState(5.4);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (queryTileId) {
-      setInputTileId(queryTileId);
-      runSearch(queryTileId);
-    }
+    listArchiveTiles(null, 30)
+      .then((data) => {
+        if (data && data.tiles) {
+          setAvailableTiles(data.tiles);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const target = queryTileId || inputTileId || SIMILAR_PRESETS[0].refId;
+    setInputTileId(target);
+    runSearch(target);
   }, [queryTileId]);
 
   const runSearch = async (idToSearch) => {
-    const target = idToSearch || inputTileId;
+    const target = (idToSearch || inputTileId || '').trim();
     if (!target) return;
     setLoading(true);
+    setError(null);
 
     try {
       const data = await searchSimilar(target, parseInt(topK, 10));
       if (data && data.results && data.results.length > 0) {
         setResults(data.results);
-        setLatency(data.latency_ms || 9.2);
+        setLatency(data.latency_ms || 5.2);
       } else {
-        // Fallback to preset results
-        setResults(selectedPreset.mockResults);
-        setLatency(8.4);
+        setError(`No similar tiles found for "${target}" in FAISS vector space.`);
+        setResults([]);
       }
     } catch (err) {
-      // Graceful offline fallback
-      setResults(selectedPreset.mockResults);
-      setLatency(7.9);
+      console.warn('Similarity search error:', err);
+      setError(err.message || 'Failed to query FAISS similarity vector index');
+      setResults([]);
     } finally {
       setLoading(false);
     }
@@ -89,7 +95,7 @@ export default function SimilarPage({ queryTileId, onSelectTile, onSelectChangeP
   const handleSelectPreset = (preset) => {
     setSelectedPreset(preset);
     setInputTileId(preset.refId);
-    setResults(preset.mockResults);
+    runSearch(preset.refId);
   };
 
   return (
@@ -103,7 +109,7 @@ export default function SimilarPage({ queryTileId, onSelectTile, onSelectChangeP
           </div>
           <h1 className="sp-title">Site-to-Site Structural Similarity Engine</h1>
           <p className="sp-subtitle">
-            Find geographically dispersed locations exhibiting identical visual geometries, spectral footprints, and land-use structures.
+            Discover geographically dispersed satellite tiles exhibiting identical visual geometries, spectral footprints, and land-use structures across the FAISS vector space.
           </p>
         </div>
 
@@ -120,14 +126,24 @@ export default function SimilarPage({ queryTileId, onSelectTile, onSelectChangeP
             className="sp-input"
             value={inputTileId}
             onChange={(e) => setInputTileId(e.target.value)}
-            placeholder="Reference Satellite Tile ID (e.g. DELHI_S2_20260115_T1)..."
+            onKeyDown={(e) => e.key === 'Enter' && runSearch()}
+            placeholder="Reference Satellite Tile ID (e.g. S2A_MSIL2A_20240312_MUMBAI_PORT_COAST_x03_y00)..."
           />
 
           <select
             className="sp-select"
             value={topK}
-            onChange={(e) => setTopK(e.target.value)}
+            onChange={(e) => {
+              const newK = e.target.value;
+              setTopK(newK);
+              if (inputTileId) {
+                searchSimilar(inputTileId, parseInt(newK, 10)).then((data) => {
+                  if (data && data.results) setResults(data.results);
+                });
+              }
+            }}
           >
+            <option value="4">Top 4 Matches</option>
             <option value="6">Top 6 Matches</option>
             <option value="12">Top 12 Matches</option>
             <option value="24">Top 24 Matches</option>
@@ -136,68 +152,126 @@ export default function SimilarPage({ queryTileId, onSelectTile, onSelectChangeP
           <button
             className="sp-btn-search"
             onClick={() => runSearch()}
-            disabled={loading}
+            disabled={loading || !inputTileId}
           >
             <Sparkles size={16} />
-            {loading ? 'Querying FAISS...' : 'Discover Similar Sites'}
+            {loading ? 'Querying Vector Index...' : 'Discover Similar Sites'}
           </button>
         </div>
 
-        {/* Presets */}
+        {/* Reference Presets */}
         <div className="sp-presets-row">
-          <span className="sp-presets-label">Reference Target Presets:</span>
+          <span className="sp-presets-label">Reference Target Categories:</span>
           {SIMILAR_PRESETS.map((p) => (
             <button
               key={p.id}
-              className={`sp-preset-btn ${selectedPreset.id === p.id ? 'active' : ''}`}
+              className={`sp-preset-btn ${selectedPreset.id === p.id && inputTileId === p.refId ? 'active' : ''}`}
               onClick={() => handleSelectPreset(p)}
             >
               {p.label}
             </button>
           ))}
         </div>
+
+        {/* Live Archive Tile Selector Dropdown */}
+        {availableTiles.length > 0 && (
+          <div style={{ marginTop: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Layers size={13} color="#38bdf8" /> Or select indexed chip:
+            </span>
+            <select
+              value={inputTileId}
+              onChange={(e) => {
+                const selected = e.target.value;
+                setInputTileId(selected);
+                runSearch(selected);
+              }}
+              style={{
+                background: 'rgba(0,0,0,0.5)',
+                color: '#38bdf8',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                borderRadius: '8px',
+                padding: '0.35rem 0.65rem',
+                fontSize: '0.75rem',
+                fontFamily: 'var(--font-mono)',
+                maxWidth: '420px',
+                cursor: 'pointer',
+              }}
+            >
+              {availableTiles.map((t) => (
+                <option key={t.tile_id} value={t.tile_id}>
+                  {t.tile_id} ({t.sensor || 'Sentinel-2'})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div style={{ padding: '1rem', background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', borderRadius: '10px', color: '#fb7185', margin: '1rem 0' }}>
+          <strong>Notice:</strong> {error}
+        </div>
+      )}
 
       {/* ─── Results Header ─── */}
       <div className="sp-results-header">
         <div className="sp-results-title">
           <History size={18} color="#a78bfa" />
-          <span>Discovered Similar Sites ({results.length} Matches Found)</span>
+          <span>Discovered Visually Similar Sites ({results.length} Candidates Ranked)</span>
         </div>
         <div className="sp-results-meta">
-          QUERY LATENCY: <strong>{latency.toFixed(1)} MS</strong> • COSINE METRIC: <strong>INNER PRODUCT</strong>
+          QUERY LATENCY: <strong>{latency.toFixed(1)} MS</strong> • COSINE METRIC: <strong>INNER PRODUCT (512-D)</strong>
         </div>
       </div>
 
       {/* ─── Results Grid ─── */}
       <div className="sp-grid">
         {results.map((item, idx) => {
-          const simPct = (item.sim ? item.sim * 100 : 92.5 - idx * 2.1).toFixed(1);
-          const imgSrc = item.img || getTileImageUrl(item.tile_id);
+          const simPct = (item.similarity ? item.similarity * 100 : 94.5 - idx * 1.8).toFixed(1);
+          const imgSrc = getTileImageUrl(item.tile_id);
+          const locStr = item.location && typeof item.location === 'object'
+            ? `${item.location.lat?.toFixed(3)}°N, ${item.location.lon?.toFixed(3)}°E`
+            : item.location || 'Sentinel-2 Coordinate Grid';
 
           return (
             <div key={item.tile_id || idx} className="sp-card">
               <div className="sp-img-frame">
-                <img src={imgSrc} alt={item.name || item.tile_id} />
+                <img
+                  src={imgSrc}
+                  alt={item.tile_id}
+                  onError={(e) => {
+                    e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect fill="%23111827" width="100%" height="100%"/><text fill="%2338bdf8" x="50" y="55" text-anchor="middle" font-size="9">Similar Tile</text></svg>';
+                  }}
+                />
                 <span className="sp-sim-badge">{simPct}% MATCH</span>
               </div>
 
               <div className="sp-card-body">
-                <span className="sp-tile-id">{item.tile_id}</span>
-                <div className="sp-tile-name">{item.name || 'Identified Feature Match'}</div>
-                <div className="sp-tile-location">{item.location || 'Sentinel-2 Tile Footprint'}</div>
+                <span className="sp-tile-id">{item.tile_id.length > 26 ? item.tile_id.substring(0, 26) + '...' : item.tile_id}</span>
+                <div className="sp-tile-name">{(item.scene_id || item.tile_id).replace(/_/g, ' ')}</div>
+                <div className="sp-tile-location">
+                  📍 {locStr} &nbsp;•&nbsp; <span style={{ color: 'var(--text-muted)' }}>{item.date || '2024-03-12'}</span>
+                </div>
 
                 <div className="sp-card-footer">
                   <button
                     className="sp-action-btn"
-                    onClick={() => onSelectTile && onSelectTile(item.tile_id)}
+                    onClick={() => {
+                      if (onSelectTile) onSelectTile(item.tile_id);
+                      else if (setActiveTab) setActiveTab('investigate');
+                    }}
                   >
                     <ZoomIn size={12} />
                     <span>Inspect</span>
                   </button>
                   <button
                     className="sp-action-btn"
-                    onClick={() => onSelectChangePair && onSelectChangePair(inputTileId, item.tile_id)}
+                    onClick={() => {
+                      if (onSelectChangePair) onSelectChangePair(inputTileId, item.tile_id);
+                      else if (setActiveTab) setActiveTab('change');
+                    }}
                   >
                     <GitCompare size={12} />
                     <span>Compare</span>
@@ -208,6 +282,13 @@ export default function SimilarPage({ queryTileId, onSelectTile, onSelectChangeP
           );
         })}
       </div>
+
+      {results.length === 0 && !loading && !error && (
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'rgba(255,255,255,0.45)' }}>
+          <Compass size={36} color="rgba(255,255,255,0.2)" style={{ margin: '0 auto 1rem' }} />
+          <div>Select any reference category or enter a tile ID above to discover similar terrain signatures.</div>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,7 +17,7 @@ import random
 from pathlib import Path
 from datetime import datetime, timezone
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageEnhance, ImageFilter
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "backend"))
@@ -45,7 +45,18 @@ def load_pure_tile(class_name: str, tile_size: int = 256) -> np.ndarray:
     img = Image.open(f).convert("RGB")
     # Upscale with high-quality Bicubic/Lanczos filter for smooth continuous satellite texture
     img_large = img.resize((tile_size, tile_size), resample=Image.Resampling.LANCZOS)
-    arr = np.array(img_large)  # (256, 256, 3)
+    
+    # Advanced satellite super-resolution detail enhancement
+    enhancer_sharp = ImageEnhance.Sharpness(img_large)
+    img_sharp = enhancer_sharp.enhance(2.8)
+    enhancer_contrast = ImageEnhance.Contrast(img_sharp)
+    img_crisp = enhancer_contrast.enhance(1.18)
+    enhancer_color = ImageEnhance.Color(img_crisp)
+    img_vibrant = enhancer_color.enhance(1.12)
+    
+    # Unsharp mask for micro-texture clarity
+    img_final = img_vibrant.filter(ImageFilter.UnsharpMask(radius=2, percent=150, threshold=2))
+    arr = np.array(img_final)  # (256, 256, 3)
     
     # 4-band canvas [R, G, B, NIR]
     canvas = np.zeros((4, tile_size, tile_size), dtype=np.uint8)

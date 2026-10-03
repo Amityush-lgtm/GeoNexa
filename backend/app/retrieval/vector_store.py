@@ -166,8 +166,9 @@ class VectorStore:
         if Path(id_map_path).exists():
             with open(id_map_path, "r") as f:
                 data = json.load(f)
-                self._id_to_tile = {int(k): v for k, v in data["id_to_tile"].items()}
-                self._tile_to_id = {v: int(k) for k, v in data["id_to_tile"].items()}
+                mapping = data.get("id_to_tile", data)
+                self._id_to_tile = {int(k): v for k, v in mapping.items()}
+                self._tile_to_id = {v: int(k) for k, v in mapping.items()}
                 self._next_id = data.get("next_id", len(self._id_to_tile))
 
         logger.info(f"Loaded FAISS index ({self.size} vectors) from {path}")

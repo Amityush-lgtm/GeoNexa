@@ -70,12 +70,11 @@ def semantic_search(
         model = get_embedding_model()
     query_vector = model.encode_text(effective_prompt)
 
-    # 2. Search FAISS index (search all vectors if filtering, else top_k)
+    # 2. Search FAISS index across candidate pool for Stage-2 reasoning
     if store is None:
         store = get_vector_store()
     total_vectors = len(store._id_to_tile)
-    fetch_k = total_vectors if any([bbox, date_from, date_to, sensor]) else min(top_k * 2, total_vectors or top_k)
-    fetch_k = max(1, fetch_k)
+    fetch_k = max(1, total_vectors) if total_vectors > 0 else max(1, top_k)
     tile_ids, scores = store.search(query_vector, k=fetch_k)
 
     if not tile_ids:
@@ -98,8 +97,13 @@ def semantic_search(
         results, bbox=bbox, date_from=date_from, date_to=date_to, sensor=sensor
     )
 
-    # 5. Trim to top_k
-    results = results[:top_k]
+    # 5. Stage 2: Apply Local VLM Precision Verification & Visual Reasoning
+    from app.retrieval.vlm_reasoner import rerank_search_results
+    results = rerank_search_results(
+        query=effective_prompt or query,
+        candidates=results,
+        top_k=top_k
+    )
 
     # 6. Log query
     latency_ms = (time.time() - start) * 1000

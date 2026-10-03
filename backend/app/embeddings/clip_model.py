@@ -35,6 +35,8 @@ class RemoteCLIPEmbeddingModel(EmbeddingModel):
             model_path: Path to local model checkpoint (.pt) or weights directory.
             device: 'cpu' or 'cuda'.
         """
+        if device == "cuda" and not torch.cuda.is_available():
+            device = "cpu"
         self._device = device
         self._model_path = Path(model_path) if model_path else None
         self._model = None
@@ -52,6 +54,8 @@ class RemoteCLIPEmbeddingModel(EmbeddingModel):
 
         if self._model_path.is_dir():
             candidates = [
+                self._model_path.parent / "RemoteCLIP-ViT-B-32-finetuned.pt",
+                self._model_path / "RemoteCLIP-ViT-B-32-finetuned.pt",
                 self._model_path / "RemoteCLIP-ViT-B-32.pt",
                 self._model_path / "remoteclip_vit_b32.pt",
                 self._model_path / "model.pt",
