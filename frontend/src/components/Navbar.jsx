@@ -1,52 +1,51 @@
 import React from 'react';
-import { LayoutDashboard, Search, Compass, GitCompare, History, Database, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Search, Compass, GitCompare, History, Database, ShieldCheck, ArrowLeft } from 'lucide-react';
 
 const navItems = [
-  { id: 'overview',    label: 'Overview',          icon: LayoutDashboard },
-  { id: 'search',      label: 'Semantic Search',   icon: Search },
-  { id: 'investigate', label: 'Tile Inspector',     icon: Compass },
-  { id: 'change',      label: 'Change Engine',      icon: GitCompare },
-  { id: 'similar',     label: 'Site Similarity',    icon: History },
-  { id: 'provenance',  label: 'Provenance Trace',   icon: ShieldCheck },
-  { id: 'archive',     label: 'Archive Ops',        icon: Database },
+  { id: 'search',      label: 'Semantic Search',  icon: Search },
+  { id: 'investigate', label: 'Tile Inspector',    icon: Compass },
+  { id: 'change',      label: 'Change Engine',     icon: GitCompare },
+  { id: 'similar',     label: 'Site Similarity',   icon: History },
+  { id: 'provenance',  label: 'Provenance Trace',  icon: ShieldCheck },
+  { id: 'archive',     label: 'Archive Ops',       icon: Database },
 ];
 
 export default function Navbar({ activeTab, setActiveTab, onBackToLanding }) {
   return (
     <header
       style={{
-        position: 'sticky',
-        top: '1rem',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
         zIndex: 100,
-        height: '64px',
+        height: '68px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        margin: '0.75rem 1.5rem',
-        padding: '0 1.25rem',
-        background: 'rgba(6, 9, 18, 0.75)',
+        padding: '0 1.5rem',
+        background: 'rgba(6, 9, 18, 0.45)',
         backdropFilter: 'blur(20px) saturate(180%)',
         WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        border: '1px solid rgba(255, 255, 255, 0.12)',
-        borderRadius: '16px',
-        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.4)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
       }}
     >
       {/* Brand */}
       <div
         style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer', flexShrink: 0 }}
-        onClick={() => setActiveTab('overview')}
+        onClick={() => setActiveTab('search')}
       >
-        <svg width="24" height="24" viewBox="0 0 256 256" fill="#38bdf8" style={{ filter: 'drop-shadow(0 0 8px rgba(56, 189, 248, 0.5))' }}>
+        <svg width="24" height="24" viewBox="0 0 256 256" fill="#ffffff" style={{ filter: 'drop-shadow(0 0 8px rgba(232, 112, 42, 0.5))' }}>
           <path d="M 256 256 L 128 256 L 0 128 L 128 128 Z M 256 128 L 128 128 L 0 0 L 128 0 Z" />
         </svg>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.45rem' }}>
           <span
             style={{
-              fontSize: '1.25rem',
+              fontSize: '1.35rem',
               color: '#ffffff',
-              fontFamily: "'Inter', sans-serif",
-              fontWeight: 800,
+              fontFamily: "'Playfair Display', serif",
+              fontStyle: 'italic',
+              fontWeight: 600,
               letterSpacing: '-0.02em',
             }}
           >
@@ -55,12 +54,12 @@ export default function Navbar({ activeTab, setActiveTab, onBackToLanding }) {
           <span
             style={{
               fontSize: '0.62rem',
-              color: '#38bdf8',
-              border: '1px solid rgba(56, 189, 248, 0.4)',
-              background: 'rgba(56, 189, 248, 0.12)',
+              color: '#e8702a',
+              border: '1px solid rgba(232, 112, 42, 0.4)',
+              background: 'rgba(232, 112, 42, 0.12)',
               borderRadius: '9999px',
               padding: '1px 6px',
-              fontWeight: 700,
+              fontWeight: 600,
               letterSpacing: '0.04em',
             }}
           >
@@ -76,14 +75,15 @@ export default function Navbar({ activeTab, setActiveTab, onBackToLanding }) {
           display: 'flex',
           alignItems: 'center',
           gap: '0.25rem',
-          background: 'rgba(255, 255, 255, 0.06)',
+          background: 'rgba(255, 255, 255, 0.12)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
           borderRadius: '9999px',
-          padding: '0.25rem 0.45rem',
+          padding: '0.28rem 0.45rem',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
           overflow: 'auto',
-          maxWidth: '60vw',
+          maxWidth: '65vw',
         }}
       >
         {navItems.map(({ id, label, icon: Icon }) => {
@@ -96,55 +96,99 @@ export default function Navbar({ activeTab, setActiveTab, onBackToLanding }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.4rem',
-                padding: '0.38rem 0.85rem',
+                padding: '0.38rem 0.9rem',
                 borderRadius: '9999px',
                 border: 'none',
-                background: active ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
-                color: active ? '#38bdf8' : 'rgba(255, 255, 255, 0.75)',
-                fontWeight: active ? 700 : 500,
+                background: active ? 'rgba(255, 255, 255, 0.25)' : 'transparent',
+                color: active ? '#ffffff' : 'rgba(255, 255, 255, 0.75)',
+                fontWeight: active ? 600 : 500,
                 fontSize: '0.8rem',
                 cursor: 'pointer',
+                transition: 'all 180ms ease',
+                fontFamily: 'var(--font-sans)',
                 whiteSpace: 'nowrap',
-                transition: 'all 0.15s ease',
+                boxShadow: active ? '0 2px 8px rgba(0,0,0,0.25)' : 'none',
+              }}
+              onMouseEnter={(e) => {
+                if (!active) {
+                  e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.75)';
+                  e.currentTarget.style.background = 'transparent';
+                }
               }}
             >
-              <Icon size={14} />
+              <Icon size={13} color={active ? '#e8702a' : 'currentColor'} />
               <span>{label}</span>
             </button>
           );
         })}
       </nav>
 
-      {/* Actions & Offline Readiness */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexShrink: 0 }}>
-        {onBackToLanding && (
-          <button
-            onClick={onBackToLanding}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.38rem 0.75rem',
-              borderRadius: '9999px',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              background: 'rgba(255, 255, 255, 0.05)',
-              color: 'rgba(255, 255, 255, 0.8)',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <ArrowLeft size={13} />
-            <span>Landing</span>
-          </button>
-        )}
-
-        <div className="badge badge-emerald" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem' }}>
-          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }} className="pulse-indicator" />
-          <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>OFFLINE ACTIVE</span>
+      {/* Right side status & Home action */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            padding: '0.3rem 0.7rem',
+            borderRadius: '9999px',
+            background: 'rgba(16, 185, 129, 0.15)',
+            border: '1px solid rgba(16, 185, 129, 0.35)',
+            color: '#34d399',
+            fontSize: '0.72rem',
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+          }}
+        >
+          <span
+            className="pulse-indicator"
+            style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }}
+          />
+          OFFLINE ACTIVE
         </div>
+
+        {/* Always-visible Home button */}
+        <button
+          onClick={onBackToLanding}
+          title="Return to Landing Page"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            background: 'rgba(56, 189, 248, 0.12)',
+            border: '1px solid rgba(56, 189, 248, 0.35)',
+            color: '#7dd3fc',
+            borderRadius: '9999px',
+            padding: '0.4rem 0.85rem',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'var(--font-sans)',
+            transition: 'all 0.2s',
+            whiteSpace: 'nowrap',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(56, 189, 248, 0.25)';
+            e.currentTarget.style.color = '#ffffff';
+            e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.7)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(56, 189, 248, 0.12)';
+            e.currentTarget.style.color = '#7dd3fc';
+            e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.35)';
+          }}
+        >
+          <ArrowLeft size={12} />
+          <span>Home</span>
+        </button>
       </div>
     </header>
   );
 }
+
