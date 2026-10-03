@@ -4387,7 +4387,7 @@ addEventListener('resize',resize);resize();rs();cur=target;
 const hud=document.getElementById('hud'),hint=document.getElementById('hint'),bar=document.getElementById('bar'),haze=document.getElementById('haze');
 const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches,clock=new THREE.Clock();
 const dir=new THREE.Vector3(),look=new THREE.Vector3();
-const _ld = document.getElementById('load'); if(_ld) _ld.remove();
+const _ld = document.getElementById('load'); if(_ld) { _ld.style.opacity = '0'; _ld.style.pointerEvents = 'none'; setTimeout(() => { if(_ld) _ld.style.display = 'none'; }, 400); }
 cam.far=3000;
 
 function frame(){
@@ -4416,9 +4416,15 @@ function frame(){
  haze.style.opacity=S(.62,.71,p)*(1-S(.73,.79,p));
  const forestEl=document.getElementById('realisticForest');
  if(forestEl){
-  const fo=S(.73,.82,p);
-  forestEl.style.opacity=fo;
-  forestEl.style.transform='scale('+(1.08-.08*S(.73,1,p))+')';
+  const fo=S(.76,.88,p);
+  forestEl.style.opacity=String(fo);
+  forestEl.style.transform='scale('+(1.06-.06*S(.76,1,p))+')';
+ }
+ // Hide the 3D WebGL canvas once real forest is opaque - prevents fake 3D nature showing through
+ const cv3d=document.getElementById('c');
+ if(cv3d){
+  const canvasOpacity = 1 - S(.82,.92,p);
+  cv3d.style.opacity=String(canvasOpacity);
  }
  els.forEach((e,i)=>{const T=TXT[i],o=S(T[4],T[5],p)*(1-S(T[6],T[7],p));e.style.opacity=o;e.style.transform='translateY('+((1-o)*22)+'px)';e.style.pointerEvents=(T[8]&&o>.5)?'auto':'none';});
  hint.style.opacity=1-S(0,.03,p);bar.style.width=(p*100)+'%';
@@ -4436,12 +4442,21 @@ return {
     if (animId) cancelAnimationFrame(animId);
     if (typeof rs === 'function') window.removeEventListener('scroll', rs);
     if (typeof resize === 'function') window.removeEventListener('resize', resize);
+    // Clear layers injected by engine
+    const host = document.getElementById('layers');
+    if (host) host.innerHTML = '';
+    // Reset overlays
+    const forestEl = document.getElementById('realisticForest');
+    if (forestEl) forestEl.style.opacity = '0';
+    const cv3d = document.getElementById('c');
+    if (cv3d) cv3d.style.opacity = '1';
+    const hazeEl = document.getElementById('haze');
+    if (hazeEl) hazeEl.style.opacity = '0';
+    const loadEl = document.getElementById('load');
+    if (loadEl) { loadEl.style.display = 'grid'; loadEl.style.opacity = '1'; }
     try {
       if (renderer) {
         renderer.dispose();
-        if (typeof renderer.forceContextLoss === 'function') {
-          renderer.forceContextLoss();
-        }
       }
     } catch(e) {}
   }

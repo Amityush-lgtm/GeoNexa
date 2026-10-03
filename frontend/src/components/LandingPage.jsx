@@ -1,17 +1,35 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import './LandingPage.css';
 
 export default function LandingPage({ onEnter }) {
-  const [engineReady, setEngineReady] = useState(false);
   const engineRef = useRef(null);
 
   useEffect(() => {
-    let scriptLoaded = false;
+    // Always scroll to top when landing page mounts (reset orbital view)
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
+    // Show loader while engine initialises
+    const loadEl = document.getElementById('load');
+    if (loadEl) {
+      loadEl.style.display = 'grid';
+      loadEl.style.opacity = '1';
+      loadEl.style.pointerEvents = 'auto';
+    }
+
+    // Reset canvas opacity in case it was hidden during a previous ground stage
+    const cv3d = document.getElementById('c');
+    if (cv3d) cv3d.style.opacity = '1';
+
+    // Reset realistic forest overlay
+    const forestEl = document.getElementById('realisticForest');
+    if (forestEl) forestEl.style.opacity = '0';
+
+    // Reset haze overlay
+    const hazeEl = document.getElementById('haze');
+    if (hazeEl) hazeEl.style.opacity = '0';
+
     let engineInstance = null;
 
-    // Check if script is already present
-    let script = document.querySelector('script[src="/terra-engine.js"]');
-    
     const initEngine = () => {
       if (typeof window.initTerraEngine === 'function') {
         engineInstance = window.initTerraEngine({
@@ -20,37 +38,33 @@ export default function LandingPage({ onEnter }) {
           }
         });
         engineRef.current = engineInstance;
-        setEngineReady(true);
       }
     };
 
-    if (!script) {
-      script = document.createElement('script');
+    // Script is loaded once; just re-init the scene each visit
+    const existingScript = document.querySelector('script[src="/terra-engine.js"]');
+    if (existingScript && typeof window.initTerraEngine === 'function') {
+      initEngine();
+    } else if (!existingScript) {
+      const script = document.createElement('script');
       script.src = '/terra-engine.js';
       script.async = true;
-      script.onload = () => {
-        scriptLoaded = true;
-        initEngine();
-      };
-      script.onerror = (e) => {
-        console.error('Failed to load terra-engine.js', e);
-      };
+      script.onload = initEngine;
+      script.onerror = (e) => console.error('Failed to load terra-engine.js', e);
       document.body.appendChild(script);
     } else {
-      if (typeof window.initTerraEngine === 'function') {
-        initEngine();
-      } else {
-        script.addEventListener('load', initEngine);
-      }
+      // Script tag exists but not yet loaded
+      existingScript.addEventListener('load', initEngine);
     }
 
     return () => {
+      // Destroy engine on unmount (navigating away from landing)
       if (engineRef.current && typeof engineRef.current.destroy === 'function') {
         engineRef.current.destroy();
         engineRef.current = null;
       }
     };
-  }, [onEnter]);
+  }, []); // Run once per mount — [] is intentional
 
   const handleNavClick = (tab) => {
     if (onEnter) onEnter(tab);
@@ -58,7 +72,7 @@ export default function LandingPage({ onEnter }) {
 
   return (
     <div className="terra-page-container">
-      {/* Loading overlay (removed by engine once compiled) */}
+      {/* Loading overlay (hidden by engine on ready) */}
       <div id="load" className="terra-loader">
         <div className="terra-loader-box">
           <div className="terra-loader-rings">
@@ -67,14 +81,14 @@ export default function LandingPage({ onEnter }) {
             <div className="terra-ring ring-3"></div>
           </div>
           <div className="terra-loader-title">GEONEXA PLANETARY TELEMETRY</div>
-          <div className="terra-loader-sub">SYNCHRONIZING ORBITAL SENSORS & SHADERS…</div>
+          <div className="terra-loader-sub">SYNCHRONIZING ORBITAL SENSORS &amp; SHADERS…</div>
         </div>
       </div>
 
       {/* Scroll progress bar */}
       <div id="bar" className="terra-progress-bar"></div>
 
-      {/* 800vh Scroller */}
+      {/* 800vh Scroller (drives Three.js scroll interpolation) */}
       <div id="scroller" className="terra-scroller"></div>
 
       {/* WebGL Canvas */}
@@ -85,7 +99,7 @@ export default function LandingPage({ onEnter }) {
       <div id="haze"></div>
       <div id="flashx"></div>
 
-      {/* Real-World Photorealistic Living Forest Layer (Fades in at ground descent) */}
+      {/* Real-World Photorealistic Living Forest Layer (fades in at final descent) */}
       <div id="realisticForest" className="terra-realistic-forest">
         <img
           src="/realistic-forest.jpg"
@@ -110,6 +124,7 @@ export default function LandingPage({ onEnter }) {
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           role="button"
           tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && window.scrollTo({ top: 0, behavior: 'smooth' })}
         >
           <span className="terra-brand-name">GEONEXA</span>
           <div className="terra-status-chip">

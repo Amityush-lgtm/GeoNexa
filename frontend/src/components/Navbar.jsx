@@ -153,38 +153,42 @@ export default function Navbar({ activeTab, setActiveTab, onBackToLanding }) {
           OFFLINE ACTIVE
         </div>
 
-        {onBackToLanding && (
-          <button
-            onClick={onBackToLanding}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              color: 'rgba(255, 255, 255, 0.8)',
-              borderRadius: '9999px',
-              padding: '0.4rem 0.85rem',
-              fontSize: '0.75rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-sans)',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-              e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
-            }}
-          >
-            <ArrowLeft size={12} />
-            <span>Landing</span>
-          </button>
-        )}
+        {/* Always-visible Home button */}
+        <button
+          onClick={onBackToLanding}
+          title="Return to Landing Page"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            background: 'rgba(56, 189, 248, 0.12)',
+            border: '1px solid rgba(56, 189, 248, 0.35)',
+            color: '#7dd3fc',
+            borderRadius: '9999px',
+            padding: '0.4rem 0.85rem',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'var(--font-sans)',
+            transition: 'all 0.2s',
+            whiteSpace: 'nowrap',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(56, 189, 248, 0.25)';
+            e.currentTarget.style.color = '#ffffff';
+            e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.7)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(56, 189, 248, 0.12)';
+            e.currentTarget.style.color = '#7dd3fc';
+            e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.35)';
+          }}
+        >
+          <ArrowLeft size={12} />
+          <span>Home</span>
+        </button>
       </div>
     </header>
   );
 }
+
